@@ -10,35 +10,35 @@
     </a>
 </div>
 
-<div class="bg-white shadow rounded-lg overflow-hidden">
+<div class="bg-slate-900/70 shadow rounded-lg overflow-hidden">
     <table class="min-w-full">
-        <thead class="bg-gray-50">
+        <thead class="bg-slate-900/80">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cover</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Judul</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Halaman</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Diupload</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase">Cover</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase">Judul</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase">Halaman</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase">Diupload</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase">Aksi</th>
             </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+        <tbody class="bg-slate-900/50 divide-y divide-gray-200">
             @forelse($dhammavachanas as $item)
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap">
                         @if($item->cover_image)
                             <img src="{{ asset('storage/' . $item->cover_image) }}" alt="{{ $item->title }}" class="h-16 w-12 object-cover">
                         @else
-                            <div class="h-16 w-12 bg-gray-200 flex items-center justify-center text-gray-400">
+                            <div class="h-16 w-12 bg-gray-200 flex items-center justify-center text-white">
                                 📄
                             </div>
                         @endif
                     </td>
                     <td class="px-6 py-4">
-                        <div class="text-sm font-medium text-gray-900">{{ $item->title }}</div>
-                        <div class="text-sm text-gray-500">{{ Str::limit($item->description ?? '', 50) }}</div>
+                        <div class="text-sm font-medium text-white">{{ $item->title }}</div>
+                        <div class="text-sm text-white">{{ Str::limit($item->description ?? '', 50) }}</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item->page_count }} hal</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item->uploader->name ?? 'Unknown' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-white">{{ $item->page_count }} hal</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-white">{{ $item->uploader->name ?? 'Unknown' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <a href="{{ route('dhammavachana.show', $item) }}" class="text-green-600 hover:text-green-900 mr-3">Lihat</a>
                         <a href="{{ route('dhammavachana.edit', $item) }}" class="text-blue-600 hover:text-blue-900 mr-3">Edit</a>
@@ -51,7 +51,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada data dhammavācanā</td>
+                    <td colspan="5" class="px-6 py-4 text-center text-white">Belum ada data dhammavācanā</td>
                 </tr>
             @endforelse
         </tbody>

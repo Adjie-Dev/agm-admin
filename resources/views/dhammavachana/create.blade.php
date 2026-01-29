@@ -4,12 +4,12 @@
 @section('header', 'Tambah Dhammavachana')
 
 @section('content')
-<div class="bg-white shadow rounded-lg p-6 max-w-2xl">
+<div class="bg-slate-900/80 shadow rounded-lg p-6 max-w-2xl">
     <form action="{{ route('dhammavachana.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
         <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="title">
+            <label class="block text-white text-sm font-bold mb-2" for="title">
                 Judul <span class="text-red-500">*</span>
             </label>
             <input
@@ -26,7 +26,7 @@
         </div>
 
         <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
+            <label class="block text-white text-sm font-bold mb-2" for="description">
                 Deskripsi <span class="text-red-500">*</span>
             </label>
             <textarea
@@ -42,7 +42,7 @@
         </div>
 
         <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="category">
+            <label class="block text-white text-sm font-bold mb-2" for="category">
                 Kategori <span class="text-red-500">*</span>
             </label>
             <input
@@ -59,13 +59,13 @@
         </div>
 
         <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="language">
+            <label class="block text-white text-sm font-bold mb-2" for="language">
                 Bahasa <span class="text-red-500">*</span>
             </label>
             <select
                 name="language"
                 id="language"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('language') border-red-500 @enderror"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-white leading-tight focus:outline-none focus:shadow-outline @error('language') border-red-500 @enderror"
                 required
             >
                 <option value="Indonesia" {{ old('language') == 'Indonesia' ? 'selected' : '' }}>Indonesia</option>
@@ -78,7 +78,7 @@
         </div>
 
         <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="pages">
+            <label class="block text-white text-sm font-bold mb-2" for="pages">
                 Jumlah Halaman (opsional)
             </label>
             <input
@@ -86,16 +86,16 @@
                 name="pages"
                 id="pages"
                 value="{{ old('pages') }}"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('pages') border-red-500 @enderror"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-white leading-tight focus:outline-none focus:shadow-outline @error('pages') border-red-500 @enderror"
             >
-            <p class="text-gray-500 text-xs mt-1">Akan otomatis terdeteksi dari PDF jika tidak diisi</p>
+            <p class="text-white text-xs mt-1">Akan otomatis terdeteksi dari PDF jika tidak diisi</p>
             @error('pages')
                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
             @enderror
         </div>
 
         <div class="mb-6">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="pdf_file">
+            <label class="block text-white text-sm font-bold mb-2" for="pdf_file">
                 File PDF <span class="text-red-500">*</span>
             </label>
             <input
@@ -106,7 +106,7 @@
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('pdf_file') border-red-500 @enderror"
                 required
             >
-            <p class="text-gray-500 text-xs mt-1">Cover akan otomatis diambil dari halaman pertama PDF. Max 20MB</p>
+            <p class="text-white text-xs mt-1">Cover akan otomatis diambil dari halaman pertama PDF. Max 20MB</p>
             @error('pdf_file')
                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
             @enderror
