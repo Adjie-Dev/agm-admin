@@ -2,24 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Dhammavachana extends Model
 {
-    use HasFactory;
-
-    protected $table = 'dhammavachana';
+    protected $table = 'dhammavachana'; // TAMBAH INI
 
     protected $fillable = [
         'title',
-        'author',
         'description',
-        'category',
-        'pages',
-        'file_size',
-        'language',
-        'pdf_file',
+        'pdf_path',
         'cover_image',
+        'page_count',
+        'uploaded_by',
+        'author',
+        'category',
+        'language',
+        'pages',
     ];
+
+    public function uploader()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
 }

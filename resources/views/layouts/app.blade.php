@@ -125,12 +125,12 @@
                          x-transition:leave-end="transform opacity-0 scale-95"
                          class="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 rounded-lg shadow-lg py-1 z-50"
                          style="display: none;">
-                        <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
                             <div class="flex items-center space-x-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                 </svg>
-                                <span>Profile</span>
+                                <span>Dashboard</span>
                             </div>
                         </a>
                         <form method="POST" action="{{ route('logout') }}">
