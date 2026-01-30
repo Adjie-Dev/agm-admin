@@ -126,13 +126,13 @@
 
 
 
-                <a href="#"
+                <a href="{{ route('kalender-buddhist.index') }}"
                    class="group flex items-center space-x-3 px-3 py-3 rounded-xl transition-all text-gray-300 hover:bg-gray-800 hover:text-white"
                    @click="sidebarOpen = false">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    <span class="font-medium">Kalendar Lunar</span>
+                    <span class="font-medium">Kalendar Buddhist</span>
                 </a>
 
                 <p class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 mt-6">OTHERS</p>

@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DhammavachanaController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\EbookController;
+use App\Http\Controllers\KalenderBuddhistController;
 
 Route::redirect('/', '/login');
 
@@ -25,4 +26,15 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('articles', ArticleController::class);
     Route::resource('ebooks', EbookController::class);
+
+    // Routes untuk Kalender Buddhist
+    Route::prefix('kalender-buddhist')->name('kalender-buddhist.')->group(function () {
+        Route::get('/', [KalenderBuddhistController::class, 'index'])->name('index');
+        Route::get('/create', [KalenderBuddhistController::class, 'create'])->name('create');
+        Route::post('/', [KalenderBuddhistController::class, 'store'])->name('store');
+        Route::get('/{acaraBuddhist}/edit', [KalenderBuddhistController::class, 'edit'])->name('edit');
+        Route::put('/{acaraBuddhist}', [KalenderBuddhistController::class, 'update'])->name('update');
+        Route::delete('/{acaraBuddhist}', [KalenderBuddhistController::class, 'destroy'])->name('destroy');
+        Route::post('/{acaraBuddhist}/toggle', [KalenderBuddhistController::class, 'toggleAktif'])->name('toggle');
+    });
 });
