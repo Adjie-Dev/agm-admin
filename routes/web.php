@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DhammavachanaController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\EbookController;
 
 Route::redirect('/', '/login');
 
@@ -23,4 +24,5 @@ Route::middleware('auth')->group(function () {
     Route::post('/articles/upload-image', [ArticleController::class, 'uploadImage'])->name('articles.upload-image');
 
     Route::resource('articles', ArticleController::class);
+    Route::resource('ebooks', EbookController::class);
 });

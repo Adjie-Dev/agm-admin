@@ -91,8 +91,8 @@
                     <span class="font-medium">Artikel</span>
                 </a>
 
-                <div x-data="{ formsOpen: {{ request()->routeIs('dhammavachana.*') ? 'true' : 'false' }} }">
-                    <button @click="formsOpen = !formsOpen" class="w-full group flex items-center justify-between space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('dhammavachana.*') ? 'bg-slate-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                <div x-data="{ formsOpen: {{ request()->routeIs('dhammavachana.*') || request()->routeIs('ebooks.*') ? 'true' : 'false' }} }">
+                    <button @click.stop="formsOpen = !formsOpen" class="w-full group flex items-center justify-between space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('dhammavachana.*') || request()->routeIs('ebooks.*') ? 'bg-slate-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
                         <div class="flex items-center space-x-3">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
@@ -103,11 +103,23 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
-                    <div x-show="formsOpen" x-transition class="ml-6 mt-2 space-y-2" style="display: none;">
-                        <a href="#" class="block px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg transition">E-book</a>
+                    <div x-show="formsOpen"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 transform translate-y-0"
+                         x-transition:leave-end="opacity-0 transform -translate-y-2"
+                         class="ml-6 mt-2 space-y-2"
+                         style="display: none;"
+                         @click.stop>
                         <a href="{{ route('dhammavachana.index') }}"
-                           class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('dhammavachana.*') ? ' text-white' : 'text-gray-400 hover:text-white' }}">
+                            class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('dhammavachana.*') ? ' text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">
                             <span class="font-medium">Dhamma Vācanā</span>
+                        </a>
+                        <a href="{{ route('ebooks.index') }}"
+                            class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('ebooks.*') ? ' text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">
+                            <span class="font-medium">E-Book</span>
                         </a>
                     </div>
                 </div>
@@ -152,18 +164,20 @@
 
                     <div class="flex items-center space-x-3">
                         <!-- Date Display with Real-time -->
-                        <div class="hidden sm:flex items-center space-x-2 px-4 py-2 bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/30">
-                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        <div class="hidden sm:flex items-center space-x-2 px-4 py-2">
+                            <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
                             <span class="text-sm text-gray-300 font-medium" id="currentDate"></span>
                         </div>
 
-                        <!-- User Avatar with Dropdown -->
+
+                        <!-- User Avatar -->
                         <div x-data="{ userMenuOpen: false }" class="relative">
-                            <button @click="userMenuOpen = !userMenuOpen" class="flex items-center space-x-3 px-3 py-2 bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/30 hover:bg-gray-800 transition">
-                                <img src="{{ asset('images/user-avatar.png') }}" alt="User" class="w-8 h-8 rounded-lg object-cover" onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Admin') }}&background=6366f1&color=fff'">
-                                <div class="hidden md:block">
+                            <button @click="userMenuOpen = !userMenuOpen" class="flex items-center space-x-3 px-3 py-2 hover:border-white rounded-xl transition">
+                                <img src="{{ asset('images/user-avatar.png') }}" alt="User" class="w-8 h-8 rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Admin') }}&background=6366f1&color=fff'">
+                                <div class="hidden md:block text-start">
                                     <p class="text-sm font-semibold text-white">Adjie</p>
                                     <p class="text-xs text-gray-400">Web Developer</p>
                                 </div>

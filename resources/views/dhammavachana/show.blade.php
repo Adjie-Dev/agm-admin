@@ -68,38 +68,6 @@
 
             <!-- Information Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                @if($dhammavachana->category)
-                <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-2 bg-indigo-500/10 rounded-lg">
-                            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500 uppercase tracking-wider">Kategori</p>
-                            <p class="text-white font-medium">{{ $dhammavachana->category }}</p>
-                        </div>
-                    </div>
-                </div>
-                @endif
-
-                @if($dhammavachana->language)
-                <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-2 bg-green-500/10 rounded-lg">
-                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500 uppercase tracking-wider">Bahasa</p>
-                            <p class="text-white font-medium">{{ $dhammavachana->language }}</p>
-                        </div>
-                    </div>
-                </div>
-                @endif
-
                 <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
                     <div class="flex items-center space-x-3">
                         <div class="p-2 bg-blue-500/10 rounded-lg">

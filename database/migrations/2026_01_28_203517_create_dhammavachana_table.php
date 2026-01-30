@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('category')->nullable();
             $table->string('language')->nullable();
             $table->integer('pages')->default(0);
+            $table->boolean('is_published')->default(false);
+            $table->integer('views')->default(0);
             $table->timestamps();
         });
     }
