@@ -5,195 +5,711 @@
 @section('header', 'Kalender Buddhist')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
-    <!-- Header dengan navigasi bulan -->
+<div class="max-w-7xl mx-auto" x-data="kalenderData()" x-init="init()">
+    <!-- TOP HEADER dengan Navigasi Bulan dan Tombol Action -->
     <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-slate-700/50 shadow-xl">
-        <div class="flex items-center justify-between">
-            <!-- Navigasi Bulan -->
+        <div class="flex items-center justify-between mb-4">
+            <!-- Judul Bulan dengan Navigasi -->
             <div class="flex items-center space-x-4">
-                <a href="{{ route('kalender-buddhist.index', ['tahun' => $bulan == 1 ? $tahun - 1 : $tahun, 'bulan' => $bulan == 1 ? 12 : $bulan - 1]) }}"
-                   class="p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition">
+                <button @click="navigatePrevMonth()"
+                        class="p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
-                </a>
+                </button>
 
-                <h2 class="text-2xl font-bold text-white">
+                <h2 class="text-2xl font-bold text-white" x-text="getHeaderTitle()">
                     {{ $tanggalPertama->locale('id')->isoFormat('MMMM YYYY') }}
                 </h2>
 
-                <a href="{{ route('kalender-buddhist.index', ['tahun' => $bulan == 12 ? $tahun + 1 : $tahun, 'bulan' => $bulan == 12 ? 1 : $bulan + 1]) }}"
-                   class="p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition">
+                <button @click="navigateNextMonth()"
+                        class="p-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
+                </button>
+
+                <span class="px-3 py-1 rounded-lg bg-slate-700/50 text-white text-sm font-semibold">
+                    New Schedule
+                </span>
+            </div>
+
+            <!-- Tombol Action Kanan -->
+            <div class="flex items-center space-x-3">
+                <a href="{{ route('kalender-buddhist.create') }}"
+                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    <span>Tambah Acara</span>
                 </a>
             </div>
+        </div>
 
-            <!-- Tombol Tambah Acara -->
-            <a href="{{ route('kalender-buddhist.create') }}"
-               class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition flex items-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                <span>Tambah Acara</span>
-            </a>
+        <!-- Tab Filter View -->
+        <div class="flex items-center space-x-2">
+            <button @click="changeView('daily')"
+                    :class="currentView === 'daily' ? 'bg-indigo-600 shadow-md' : 'bg-slate-700/50 hover:bg-slate-700'"
+                    class="px-4 py-2 rounded-lg text-white text-sm font-semibold transition">
+                Daily
+            </button>
+            <button @click="changeView('weekly')"
+                    :class="currentView === 'weekly' ? 'bg-indigo-600 shadow-md' : 'bg-slate-700/50 hover:bg-slate-700'"
+                    class="px-4 py-2 rounded-lg text-white text-sm font-semibold transition">
+                Weekly
+            </button>
+            <button @click="changeView('monthly')"
+                    :class="currentView === 'monthly' ? 'bg-indigo-600 shadow-md' : 'bg-slate-700/50 hover:bg-slate-700'"
+                    class="px-4 py-2 rounded-lg text-white text-sm font-semibold transition">
+                Monthly
+            </button>
+            <button @click="changeView('yearly')"
+                    :class="currentView === 'yearly' ? 'bg-indigo-600 shadow-md' : 'bg-slate-700/50 hover:bg-slate-700'"
+                    class="px-4 py-2 rounded-lg text-white text-sm font-semibold transition">
+                Yearly
+            </button>
         </div>
     </div>
 
-    <!-- Legend -->
-    <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-slate-700/50 shadow-xl">
-        <h3 class="text-lg font-bold text-white mb-4">Keterangan</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="flex items-center space-x-2">
-                <div class="w-4 h-4 rounded-full bg-cyan-500"></div>
-                <span class="text-sm text-gray-300">Hari Uposatha (Purnama)</span>
-            </div>
-            <div class="flex items-center space-x-2">
-                <div class="w-4 h-4 rounded-full bg-amber-500"></div>
-                <span class="text-sm text-gray-300">Hari Raya Waisak</span>
-            </div>
-            <div class="flex items-center space-x-2">
-                <div class="w-4 h-4 rounded-full bg-purple-500"></div>
-                <span class="text-sm text-gray-300">Magha Puja</span>
-            </div>
-            <div class="flex items-center space-x-2">
-                <div class="w-4 h-4 rounded-full bg-emerald-500"></div>
-                <span class="text-sm text-gray-300">Asalha Puja</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Kalender -->
-    <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 shadow-xl max-w-4xl mx-auto">
-        <!-- Header Hari -->
-        <div class="grid grid-cols-7 gap-1.5 mb-3">
-            @foreach(['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'] as $hari)
-            <div class="text-center py-1.5 text-xs font-bold text-gray-400">
-                {{ $hari }}
-            </div>
-            @endforeach
-        </div>
-
-        <!-- Tanggal -->
-        <div class="grid grid-cols-7 gap-1.5">
-            @php
-                $tanggalSekarang = $tanggalPertama->copy()->startOfWeek(Carbon\Carbon::SUNDAY);
-                $tanggalAkhir = $tanggalPertama->copy()->endOfMonth()->endOfWeek(Carbon\Carbon::SATURDAY);
-            @endphp
-
-            @while($tanggalSekarang <= $tanggalAkhir)
-                @php
-                    $tanggalStr = $tanggalSekarang->format('Y-m-d');
-                    $adaDiBulanIni = $tanggalSekarang->month == $bulan;
-                    $hariIni = $tanggalSekarang->isToday();
-                    $faseBulanHariIni = $faseBulan->get($tanggalStr);
-                    $acaraHariIni = $acaraBuddhist->get($tanggalStr);
-
-                    // Cek apakah ada Uposatha
-                    $uposathaHariIni = null;
-                    if ($faseBulanHariIni && $faseBulanHariIni->adalahHariUposatha()) {
-                        $uposathaHariIni = $aturanUposatha->get($faseBulanHariIni->fase);
-                    }
-                @endphp
-
-                <div class="relative rounded-xl border transition overflow-hidden"
-                     style="aspect-ratio: 1/1;"
-                     class="{{ $adaDiBulanIni ? 'bg-slate-700/30 border-slate-600/50' : 'bg-slate-900/20 border-slate-800/50' }}
-                    {{ $hariIni ? 'ring-2 ring-indigo-500' : '' }}">
-
-                    @if($uposathaHariIni || $acaraHariIni)
-                        <!-- Jika ada acara, background FULL -->
-                        <div class="absolute inset-0 rounded-[inherit] flex items-center justify-center"
-                             style="background-color: {{ $acaraHariIni ? $acaraHariIni->warna : $uposathaHariIni->warna }};">
-                            <span class="text-sm font-bold text-white text-center px-2">
-                                {{ $acaraHariIni ? $acaraHariIni->nama : $uposathaHariIni->nama_acara }}
-                            </span>
-                        </div>
-
-                        <!-- Nomor tanggal di pojok kiri atas dengan background semi-transparan -->
-                        <div class="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
-                            <span class="text-sm font-bold bg-black/40 px-2 py-1 rounded {{ $adaDiBulanIni ? 'text-white' : 'text-gray-400' }}">
-                                {{ $tanggalSekarang->day }}
-                            </span>
-                            @if($faseBulanHariIni)
-                            <span class="text-xs bg-black/40 px-1.5 py-0.5 rounded" title="{{ $faseBulanHariIni->nama_tampilan }}">
-                                {{ ['bulan_baru' => '🌑', 'paruh_pertama' => '🌓', 'purnama' => '🌕', 'paruh_akhir' => '🌗'][$faseBulanHariIni->fase] ?? '' }}
-                            </span>
-                            @endif
-                        </div>
-                    @else
-                        <!-- Jika tidak ada acara, tampilan normal -->
-                        <div class="absolute top-2 left-2 right-2 flex items-center justify-between">
-                            <span class="text-sm font-bold {{ $adaDiBulanIni ? 'text-white' : 'text-gray-600' }}">
-                                {{ $tanggalSekarang->day }}
-                            </span>
-                            @if($faseBulanHariIni)
-                            <span class="text-xs" title="{{ $faseBulanHariIni->nama_tampilan }}">
-                                {{ ['bulan_baru' => '🌑', 'paruh_pertama' => '🌓', 'purnama' => '🌕', 'paruh_akhir' => '🌗'][$faseBulanHariIni->fase] ?? '' }}
-                            </span>
-                            @endif
-                        </div>
-                    @endif
+    <!-- HEADER Tanggal Minggu - Tampil untuk Weekly dan Monthly -->
+    <div x-show="currentView === 'weekly' || currentView === 'monthly'"
+         x-transition
+         x-data="weekHeaderData()"
+         x-init="generateWeekDates()"
+         class="bg-slate-800/70 backdrop-blur-sm rounded-xl mb-4 border border-slate-700/50 shadow-xl">
+        <div class="grid grid-cols-7 gap-1 p-2">
+            <template x-for="(day, index) in weekDates" :key="index">
+                <div class="text-center p-3 rounded-lg transition-all duration-300 cursor-pointer"
+                     :class="day.isToday ? 'bg-indigo-600 text-white shadow-lg scale-105' : 'bg-slate-700/30 text-white hover:bg-slate-700/50'"
+                     @click="navigateToDate(day.fullDate)">
+                    <div class="text-2xl font-bold" x-text="day.date"></div>
+                    <div class="text-xs uppercase font-semibold tracking-wider" x-text="day.name"></div>
                 </div>
-
-                @php $tanggalSekarang->addDay(); @endphp
-            @endwhile
+            </template>
         </div>
     </div>
 
-    <!-- Daftar Acara Bulan Ini -->
-    <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-6 mt-6 border border-slate-700/50 shadow-xl">
-        <h3 class="text-lg font-bold text-white mb-4">Daftar Acara Bulan Ini</h3>
+    <!-- Grid 2 Kolom: Kalender Utama + Sidebar -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- KALENDER UTAMA - 3 Kolom (KIRI) -->
+        <div class="lg:col-span-3">
+            <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 shadow-xl">
 
-        @if($acaraBuddhist->count() > 0)
-        <div class="space-y-3">
-            @foreach($acaraBuddhist->sortBy('tanggal') as $acara)
-            <div class="flex items-center justify-between p-4 rounded-xl bg-slate-700/30 border border-slate-600/50 hover:bg-slate-700/50 transition">
-                <div class="flex items-center space-x-4">
-                    <div class="w-3 h-3 rounded-full" style="background-color: {{ $acara->warna }};"></div>
-                    <div>
-                        <p class="font-semibold text-white">{{ $acara->nama }}</p>
-                        <p class="text-sm text-gray-400">{{ $acara->tanggal->locale('id')->isoFormat('dddd, D MMMM YYYY') }}</p>
-                        @if($acara->deskripsi)
-                        <p class="text-xs text-gray-500 mt-1">{{ $acara->deskripsi }}</p>
-                        @endif
+                <!-- DAILY VIEW - Google Calendar Style -->
+                <div x-show="currentView === 'daily'" x-transition>
+                    @php
+                        $today = \Carbon\Carbon::today();
+                        $todayStr = $today->format('Y-m-d');
+                        $acaraToday = $acaraBuddhist->get($todayStr);
+                        $faseBulanToday = $faseBulan->get($todayStr);
+                        $uposathaToday = null;
+                        if ($faseBulanToday && $faseBulanToday->adalahHariUposatha()) {
+                            $uposathaToday = $aturanUposatha->get($faseBulanToday->fase);
+                        }
+                    @endphp
+
+                    <!-- Header Tanggal -->
+                    <div class="mb-4 pb-3 border-b border-slate-600/50">
+                        <h3 class="text-xl font-bold text-white">{{ $today->locale('id')->isoFormat('dddd, D MMMM YYYY') }}</h3>
+                    </div>
+
+                    <!-- Grid dengan Time Sidebar -->
+                    <div class="flex max-h-[700px] overflow-y-auto">
+                        <!-- Sidebar Waktu -->
+                        <div class="w-16 flex-shrink-0 border-r border-slate-600/30 pr-2">
+                            @for($hour = 0; $hour < 24; $hour++)
+                                <div class="h-12 flex items-start justify-end text-xs text-gray-500 font-medium">
+                                    {{ sprintf('%02d:00', $hour) }}
+                                </div>
+                            @endfor
+                        </div>
+
+                        <!-- Area Event -->
+                        <div class="flex-1 pl-4 relative">
+                            @for($hour = 0; $hour < 24; $hour++)
+                                <div class="h-12 border-b border-slate-700/30"></div>
+                            @endfor
+
+                            <!-- Event Display -->
+                            @if($uposathaToday || $acaraToday)
+                                <div class="absolute top-24 left-4 right-4 rounded-lg p-4 shadow-lg cursor-pointer hover:shadow-xl transition"
+                                     style="background-color: {{ $acaraToday ? $acaraToday->warna : $uposathaToday->warna }};">
+                                    <h4 class="text-lg font-bold text-white mb-1">
+                                        {{ $acaraToday ? $acaraToday->nama : $uposathaToday->nama_acara }}
+                                    </h4>
+                                    @if($acaraToday && $acaraToday->deskripsi)
+                                        <p class="text-sm text-white/90">{{ $acaraToday->deskripsi }}</p>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-2">
-                    <a href="{{ route('kalender-buddhist.edit', $acara) }}"
-                       class="p-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                    </a>
+                <!-- WEEKLY VIEW - Google Calendar Style -->
+                <div x-show="currentView === 'weekly'" x-transition>
+                    @php
+                        $weekStart = \Carbon\Carbon::now()->startOfWeek(Carbon\Carbon::MONDAY);
+                        $weekEnd = \Carbon\Carbon::now()->endOfWeek(Carbon\Carbon::SUNDAY);
+                    @endphp
 
-                    <form action="{{ route('kalender-buddhist.destroy', $acara) }}" method="POST" class="inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit"
-                                onclick="return confirm('Yakin ingin menghapus acara ini?')"
-                                class="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-400 transition">
+                    <!-- Header Hari -->
+                    <div class="flex border-b border-slate-600/50 mb-4 pb-2">
+                        <div class="w-16"></div>
+                        @php $weekDay = $weekStart->copy(); @endphp
+                        @while($weekDay <= $weekEnd)
+                            <div class="flex-1 text-center">
+                                <div class="text-xs text-gray-400 uppercase font-semibold">{{ $weekDay->locale('id')->isoFormat('ddd') }}</div>
+                                <div class="text-2xl font-bold {{ $weekDay->isToday() ? 'text-indigo-400' : 'text-white' }} mt-1">
+                                    {{ $weekDay->day }}
+                                </div>
+                            </div>
+                            @php $weekDay->addDay(); @endphp
+                        @endwhile
+                    </div>
+
+                    <!-- Grid dengan Time Sidebar -->
+                    <div class="flex max-h-[600px] overflow-y-auto">
+                        <!-- Sidebar Waktu -->
+                        <div class="w-16 flex-shrink-0 border-r border-slate-600/30 pr-2">
+                            @for($hour = 0; $hour < 24; $hour++)
+                                <div class="h-12 flex items-start justify-end text-xs text-gray-500 font-medium">
+                                    {{ sprintf('%02d:00', $hour) }}
+                                </div>
+                            @endfor
+                        </div>
+
+                        <!-- Area Event per Hari -->
+                        <div class="flex-1 flex">
+                            @php $weekDay = $weekStart->copy(); @endphp
+                            @while($weekDay <= $weekEnd)
+                                @php
+                                    $dayStr = $weekDay->format('Y-m-d');
+                                    $acaraDay = $acaraBuddhist->get($dayStr);
+                                    $faseBulanDay = $faseBulan->get($dayStr);
+                                    $uposathaDay = null;
+                                    if ($faseBulanDay && $faseBulanDay->adalahHariUposatha()) {
+                                        $uposathaDay = $aturanUposatha->get($faseBulanDay->fase);
+                                    }
+                                @endphp
+
+                                <div class="flex-1 border-r border-slate-700/30 relative">
+                                    @for($hour = 0; $hour < 24; $hour++)
+                                        <div class="h-12 border-b border-slate-700/30"></div>
+                                    @endfor
+
+                                    <!-- Event Display -->
+                                    @if($uposathaDay || $acaraDay)
+                                        <div class="absolute top-24 left-1 right-1 rounded p-2 text-xs cursor-pointer hover:shadow-lg transition"
+                                             style="background-color: {{ $acaraDay ? $acaraDay->warna : $uposathaDay->warna }};">
+                                            <div class="font-bold text-white truncate">
+                                                {{ $acaraDay ? $acaraDay->nama : $uposathaDay->nama_acara }}
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                @php $weekDay->addDay(); @endphp
+                            @endwhile
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MONTHLY VIEW (Tetap sama) -->
+                <div x-show="currentView === 'monthly'" x-transition>
+                    <div class="grid grid-cols-7 gap-3">
+                        @php
+                            $tanggalSekarang = $tanggalPertama->copy()->startOfWeek(Carbon\Carbon::MONDAY);
+                            $tanggalAkhir = $tanggalPertama->copy()->endOfMonth()->endOfWeek(Carbon\Carbon::SUNDAY);
+                        @endphp
+
+                        @while($tanggalSekarang <= $tanggalAkhir)
+                            @php
+                                $tanggalStr = $tanggalSekarang->format('Y-m-d');
+                                $adaDiBulanIni = $tanggalSekarang->month == $bulan;
+                                $hariIni = $tanggalSekarang->isToday();
+                                $faseBulanHariIni = $faseBulan->get($tanggalStr);
+                                $acaraHariIni = $acaraBuddhist->get($tanggalStr);
+
+                                $uposathaHariIni = null;
+                                if ($faseBulanHariIni && $faseBulanHariIni->adalahHariUposatha()) {
+                                    $uposathaHariIni = $aturanUposatha->get($faseBulanHariIni->fase);
+                                }
+                            @endphp
+
+                            <div class="min-h-[140px] rounded-xl border {{ $hariIni ? 'ring-2 ring-indigo-500' : '' }} overflow-hidden {{ $adaDiBulanIni ? 'border-slate-600/50' : 'border-slate-800/50' }}">
+                                @if($uposathaHariIni || $acaraHariIni)
+                                    <div class="h-full flex flex-col cursor-pointer hover:scale-105 transition-transform"
+                                         style="background-color: {{ $acaraHariIni ? $acaraHariIni->warna : $uposathaHariIni->warna }};">
+                                        <div class="p-3 pb-2">
+                                            <div class="text-base font-bold text-white/90 mb-2">
+                                                {{ $tanggalSekarang->day }}
+                                            </div>
+                                        </div>
+                                        <div class="flex-1 px-3 pb-3">
+                                            <div class="font-semibold text-white text-sm leading-tight mb-1">
+                                                {{ $acaraHariIni ? $acaraHariIni->nama : $uposathaHariIni->nama_acara }}
+                                            </div>
+                                            @if($acaraHariIni && $acaraHariIni->deskripsi)
+                                                <div class="text-white/90 text-xs leading-tight line-clamp-3">
+                                                    {{ $acaraHariIni->deskripsi }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="h-full p-3 {{ $adaDiBulanIni ? 'bg-slate-700/40' : 'bg-slate-900/20' }}">
+                                        <div class="text-base font-bold {{ $adaDiBulanIni ? 'text-white' : 'text-gray-600' }}">
+                                            {{ $tanggalSekarang->day }}
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            @php $tanggalSekarang->addDay(); @endphp
+                        @endwhile
+                    </div>
+                </div>
+
+                <!-- YEARLY VIEW - Google Calendar Style -->
+                <div x-show="currentView === 'yearly'" x-transition>
+                    <div class="grid grid-cols-4 gap-4">
+                        @for($m = 1; $m <= 12; $m++)
+                            @php
+                                $monthStart = \Carbon\Carbon::create($tahun, $m, 1);
+                                $monthEnd = $monthStart->copy()->endOfMonth();
+                                $monthName = $monthStart->locale('id')->isoFormat('MMMM');
+                            @endphp
+
+                            <div class="bg-slate-700/40 rounded-xl p-4 border border-slate-600/50 hover:bg-slate-700/60 transition cursor-pointer"
+                                 @click="navigateToMonth({{ $tahun }}, {{ $m }})">
+                                <!-- Header Bulan -->
+                                <h4 class="text-sm font-bold text-white mb-3 text-center">{{ $monthName }}</h4>
+
+                                <!-- Mini Calendar Grid -->
+                                <div class="grid grid-cols-7 gap-1">
+                                    <!-- Header Hari -->
+                                    @foreach(['S', 'S', 'R', 'K', 'J', 'S', 'M'] as $hari)
+                                    <div class="text-center text-[9px] font-semibold text-gray-500">{{ $hari }}</div>
+                                    @endforeach
+
+                                    <!-- Days -->
+                                    @php
+                                        $firstDayOfMonth = $monthStart->copy();
+                                        $startDayOfWeek = $firstDayOfMonth->dayOfWeek;
+                                        $startDayOfWeek = $startDayOfWeek == 0 ? 6 : $startDayOfWeek - 1;
+                                        $daysInMonth = $monthEnd->day;
+                                    @endphp
+
+                                    @for($i = 0; $i < $startDayOfWeek; $i++)
+                                        <div class="aspect-square"></div>
+                                    @endfor
+
+                                    @for($day = 1; $day <= $daysInMonth; $day++)
+                                        @php
+                                            $currentDate = \Carbon\Carbon::create($tahun, $m, $day);
+                                            $dateStr = $currentDate->format('Y-m-d');
+                                            $faseBulanCheck = $faseBulan->get($dateStr);
+                                            $acaraCheck = $acaraBuddhist->get($dateStr);
+                                            $uposathaCheck = null;
+                                            if ($faseBulanCheck && $faseBulanCheck->adalahHariUposatha()) {
+                                                $uposathaCheck = $aturanUposatha->get($faseBulanCheck->fase);
+                                            }
+                                            $hasEvent = $acaraCheck || $uposathaCheck;
+                                            $isToday = $currentDate->isToday();
+                                        @endphp
+
+                                        <div class="aspect-square flex items-center justify-center">
+                                            @if($hasEvent)
+                                                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                                                     style="background-color: {{ $acaraCheck ? $acaraCheck->warna : $uposathaCheck->warna }};">
+                                                    {{ $day }}
+                                                </div>
+                                            @elseif($isToday)
+                                                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-indigo-500 text-indigo-400">
+                                                    {{ $day }}
+                                                </div>
+                                            @else
+                                                <span class="text-[10px] font-semibold text-gray-400">{{ $day }}</span>
+                                            @endif
+                                        </div>
+                                    @endfor
+                                </div>
+                            </div>
+                        @endfor
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SIDEBAR KANAN - 1 Kolom -->
+        <div class="lg:col-span-1">
+            <div class="space-y-6 sticky top-6">
+                <!-- Mini Kalender -->
+                <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 border border-slate-700/50 shadow-xl" x-data="miniCalendar()">
+                    <!-- Header dengan navigasi -->
+                    <div class="flex items-center justify-between mb-4">
+                        <button @click="prevMonth()"
+                                class="p-1 text-white/80 hover:text-white transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </button>
-                    </form>
+
+                        <h3 class="text-base font-bold text-white text-center" x-text="displayMonth">
+                            {{ $tanggalPertama->locale('id')->isoFormat('MMM YYYY') }}
+                        </h3>
+
+                        <button @click="nextMonth()"
+                                class="p-1 text-white/80 hover:text-white transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Mini Calendar Header -->
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        @foreach(['SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB', 'MIN'] as $hari)
+                        <div class="text-center text-[10px] font-semibold text-gray-400">
+                            {{ $hari }}
+                        </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Mini Calendar Grid - Dynamic -->
+                    <div class="grid grid-cols-7 gap-1.5">
+                        <template x-for="day in calendarDays" :key="day.date">
+                            <div class="aspect-square flex items-center justify-center">
+                                <template x-if="day.hasEvent">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"
+                                         :style="'background-color: ' + day.color"
+                                         @click="navigateToDate(day.fullDate)">
+                                        <span class="text-xs font-semibold"
+                                              :class="day.isCurrentMonth ? 'text-white' : 'text-white/50'"
+                                              x-text="day.day"></span>
+                                    </div>
+                                </template>
+                                <template x-if="!day.hasEvent && day.isToday">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 border-dashed border-indigo-500 transition cursor-pointer"
+                                         @click="navigateToDate(day.fullDate)">
+                                        <span class="text-xs font-semibold text-white" x-text="day.day"></span>
+                                    </div>
+                                </template>
+                                <template x-if="!day.hasEvent && !day.isToday">
+                                    <span class="text-xs font-semibold hover:text-indigo-400 transition cursor-pointer"
+                                          :class="day.isCurrentMonth ? 'text-white' : 'text-gray-600'"
+                                          @click="navigateToDate(day.fullDate)"
+                                          x-text="day.day"></span>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Daftar Acara Bulan Ini -->
+                <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 border border-slate-700/50 shadow-xl">
+                    <h3 class="text-base font-bold text-white mb-4">Acara Bulan Ini</h3>
+
+                    @if($acaraBuddhist->count() > 0)
+                        <div class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                            @foreach($acaraBuddhist->sortBy('tanggal') as $acara)
+                                <div class="rounded-xl p-3 bg-slate-700/30 border border-slate-600/50 hover:bg-slate-700/50 transition cursor-pointer">
+                                    <!-- Header Event dengan Badge Tanggal -->
+                                    <div class="flex items-start space-x-3 mb-2">
+                                        <div class="flex-shrink-0 w-11 h-11 rounded-lg flex flex-col items-center justify-center"
+                                             style="background-color: {{ $acara->warna }};">
+                                            <span class="text-[9px] text-white/80 font-semibold uppercase">
+                                                {{ $acara->tanggal->format('M') }}
+                                            </span>
+                                            <span class="text-base text-white font-bold leading-none">
+                                                {{ $acara->tanggal->format('d') }}
+                                            </span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-white text-sm truncate">{{ $acara->nama }}</p>
+                                            <p class="text-xs text-gray-400">
+                                                {{ $acara->tanggal->locale('id')->isoFormat('dddd') }}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    @if($acara->deskripsi)
+                                        <p class="text-xs text-gray-400 mb-3 line-clamp-2">{{ $acara->deskripsi }}</p>
+                                    @endif
+
+                                    <!-- Action Buttons -->
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ route('kalender-buddhist.edit', $acara) }}"
+                                           class="flex-1 px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 transition text-center text-xs font-medium">
+                                            Edit
+                                        </a>
+
+                                        <form action="{{ route('kalender-buddhist.destroy', $acara) }}" method="POST" class="flex-1">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    onclick="return confirm('Yakin ingin menghapus acara ini?')"
+                                                    class="w-full px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-400 transition text-xs font-medium">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-center text-gray-500 py-8 text-sm">Tidak ada acara di bulan ini</p>
+                    @endif
                 </div>
             </div>
-            @endforeach
         </div>
-        @else
-        <p class="text-center text-gray-500 py-8">Tidak ada acara di bulan ini</p>
-        @endif
     </div>
 </div>
 
 @if(session('success'))
 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 3000)"
-     class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl">
+     class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl z-50">
     {{ session('success') }}
 </div>
 @endif
+
+<script>
+// Fungsi untuk week header data
+function weekHeaderData() {
+    return {
+        weekDates: [],
+
+        generateWeekDates() {
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + mondayOffset);
+
+            const dayNames = ['SENIN', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+            this.weekDates = [];
+
+            for (let i = 0; i < 7; i++) {
+                const currentDate = new Date(monday);
+                currentDate.setDate(monday.getDate() + i);
+                const isToday = currentDate.toDateString() === today.toDateString();
+
+                this.weekDates.push({
+                    date: currentDate.getDate(),
+                    name: dayNames[i],
+                    fullDate: currentDate,
+                    isToday: isToday
+                });
+            }
+        },
+
+        navigateToDate(date) {
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
+            window.location.href = url;
+        }
+    }
+}
+
+// Fungsi untuk kalender utama
+function kalenderData() {
+    return {
+        currentYear: {{ $tahun }},
+        currentMonth: {{ $bulan }},
+        currentView: 'monthly',
+
+        init() {
+            const savedView = localStorage.getItem('kalenderView');
+            if (savedView) {
+                this.currentView = savedView;
+            }
+        },
+
+        changeView(view) {
+            this.currentView = view;
+            localStorage.setItem('kalenderView', view);
+        },
+
+        getHeaderTitle() {
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+            switch(this.currentView) {
+                case 'daily':
+                    const today = new Date();
+                    return `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+                case 'weekly':
+                    return `Minggu Ini - ${monthNames[this.currentMonth - 1]} ${this.currentYear}`;
+                case 'yearly':
+                    return `Tahun ${this.currentYear}`;
+                default:
+                    return `${monthNames[this.currentMonth - 1]} ${this.currentYear}`;
+            }
+        },
+
+        navigatePrevMonth() {
+            if (this.currentView === 'yearly') {
+                this.currentYear--;
+                this.navigateToMonth(this.currentYear, this.currentMonth);
+            } else {
+                let newMonth = this.currentMonth - 1;
+                let newYear = this.currentYear;
+
+                if (newMonth < 1) {
+                    newMonth = 12;
+                    newYear = this.currentYear - 1;
+                }
+
+                this.navigateToMonth(newYear, newMonth);
+            }
+        },
+
+        navigateNextMonth() {
+            if (this.currentView === 'yearly') {
+                this.currentYear++;
+                this.navigateToMonth(this.currentYear, this.currentMonth);
+            } else {
+                let newMonth = this.currentMonth + 1;
+                let newYear = this.currentYear;
+
+                if (newMonth > 12) {
+                    newMonth = 1;
+                    newYear = this.currentYear + 1;
+                }
+
+                this.navigateToMonth(newYear, newMonth);
+            }
+        },
+
+        navigateToMonth(year, month) {
+            const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
+            window.location.href = url;
+        }
+    }
+}
+
+// Fungsi untuk mini kalender
+function miniCalendar() {
+    return {
+        miniYear: {{ $tahun }},
+        miniMonth: {{ $bulan }},
+        calendarDays: [],
+        displayMonth: '',
+
+        init() {
+            this.generateSimpleCalendar();
+        },
+
+        prevMonth() {
+            this.miniMonth--;
+            if (this.miniMonth < 1) {
+                this.miniMonth = 12;
+                this.miniYear--;
+            }
+            this.generateSimpleCalendar();
+        },
+
+        nextMonth() {
+            this.miniMonth++;
+            if (this.miniMonth > 12) {
+                this.miniMonth = 1;
+                this.miniYear++;
+            }
+            this.generateSimpleCalendar();
+        },
+
+        changeViewFromSidebar(view) {
+            // Trigger view change di main calendar
+            window.dispatchEvent(new CustomEvent('change-calendar-view', { detail: view }));
+        },
+
+        generateSimpleCalendar() {
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            this.displayMonth = `${monthNames[this.miniMonth - 1]} ${this.miniYear}`;
+
+            const firstDay = new Date(this.miniYear, this.miniMonth - 1, 1);
+            const lastDay = new Date(this.miniYear, this.miniMonth, 0);
+            let dayOfWeek = firstDay.getDay();
+            dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+            const daysInMonth = lastDay.getDate();
+            const today = new Date();
+
+            this.calendarDays = [];
+
+            // Previous month days
+            const prevMonthLastDay = new Date(this.miniYear, this.miniMonth - 1, 0).getDate();
+            for (let i = dayOfWeek - 1; i >= 0; i--) {
+                const day = prevMonthLastDay - i;
+                const prevMonth = this.miniMonth === 1 ? 12 : this.miniMonth - 1;
+                const prevYear = this.miniMonth === 1 ? this.miniYear - 1 : this.miniYear;
+
+                this.calendarDays.push({
+                    day: day,
+                    date: `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    fullDate: new Date(prevYear, prevMonth - 1, day),
+                    isCurrentMonth: false,
+                    isToday: false,
+                    hasEvent: false,
+                    color: ''
+                });
+            }
+
+            // Current month days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const currentDate = new Date(this.miniYear, this.miniMonth - 1, day);
+                const isToday = currentDate.toDateString() === today.toDateString();
+
+                this.calendarDays.push({
+                    day: day,
+                    date: `${this.miniYear}-${String(this.miniMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    fullDate: currentDate,
+                    isCurrentMonth: true,
+                    isToday: isToday,
+                    hasEvent: false,
+                    color: ''
+                });
+            }
+
+            // Next month days
+            const totalCells = Math.ceil(this.calendarDays.length / 7) * 7;
+            const remainingCells = totalCells - this.calendarDays.length;
+
+            for (let day = 1; day <= remainingCells; day++) {
+                const nextMonth = this.miniMonth === 12 ? 1 : this.miniMonth + 1;
+                const nextYear = this.miniMonth === 12 ? this.miniYear + 1 : this.miniYear;
+
+                this.calendarDays.push({
+                    day: day,
+                    date: `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    fullDate: new Date(nextYear, nextMonth - 1, day),
+                    isCurrentMonth: false,
+                    isToday: false,
+                    hasEvent: false,
+                    color: ''
+                });
+            }
+        },
+
+        navigateToDate(date) {
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
+            window.location.href = url;
+        }
+    }
+}
+
+// Listen untuk event dari sidebar
+window.addEventListener('change-calendar-view', (e) => {
+    const view = e.detail;
+    localStorage.setItem('kalenderView', view);
+    window.location.reload();
+});
+</script>
 @endsection

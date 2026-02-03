@@ -2,59 +2,121 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Display the user's profile.
      */
-    public function edit(Request $request): View
+    public function show()
+    {
+        return view('profile.show', [
+            'user' => Auth::user()
+        ]);
+    }
+
+    /**
+     * Show the form for editing the user's profile.
+     */
+    public function edit()
     {
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => Auth::user()
         ]);
     }
 
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(Request $request)
     {
-        $request->user()->fill($request->validated());
+        $user = Auth::user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone' => ['nullable', 'string', 'max:20'],
+        ]);
 
-        $request->user()->save();
+        $user->update($validated);
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return back()->with('success', 'Profile berhasil diupdate!');
     }
 
     /**
-     * Delete the user's account.
+     * Update the user's password.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function updatePassword(Request $request)
     {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $user = $request->user();
+        Auth::user()->update([
+            'password' => Hash::make($validated['password']),
+        ]);
 
-        Auth::logout();
+        return back()->with('password_success', 'Password berhasil diubah!');
+    }
 
-        $user->delete();
+    /**
+     * Update the user's profile photo.
+     */
+    public function updatePhoto(Request $request)
+    {
+        try {
+            $request->validate([
+                'profile_photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120'
+            ]);
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+            $user = Auth::user();
 
-        return Redirect::to('/');
+            // Hapus foto lama jika ada
+            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+                Storage::disk('public')->delete($user->profile_photo);
+            }
+
+            // Upload foto baru
+            $path = $request->file('profile_photo')->store('profile-photos', 'public');
+
+            // Update database
+            $user->update([
+                'profile_photo' => $path
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Foto profile berhasil diupdate',
+                    'photo_url' => asset('storage/' . $path)
+                ]);
+            }
+
+            return redirect()->back()->with('photo_success', 'Foto profile berhasil diupdate');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal: ' . implode(', ', $e->errors()['profile_photo'] ?? ['Error tidak diketahui'])
+                ], 422);
+            }
+            return back()->withErrors($e->errors());
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ], 500);
+            }
+            return back()->with('error', 'Gagal mengupload foto: ' . $e->getMessage());
+        }
     }
 }

@@ -2,27 +2,82 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ebook;
+use App\Models\Dhammavachana;
+use App\Models\AcaraBuddhist;
+use App\Models\FaseBulan;
+use App\Models\Article; // ⭐ TAMBAHKAN INI - Sesuai model Article
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use App\Models\DhammaVachana;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $totalDhammaVachana = DhammaVachana::count();
-        $publishedCount = DhammaVachana::where('is_published', true)->count();
-        $draftCount = DhammaVachana::where('is_published', false)->count();
-        $totalViews = DhammaVachana::sum('views') ?? 0;
-        $recentContent = DhammaVachana::latest()->take(5)->get();
-        $recentActivity = 'Hari ini';
+        // ⭐ STATISTIK - TAMBAHKAN ARTIKEL
+        $totalEbooks = Ebook::count();
+        $totalDhammavachana = Dhammavachana::count();
+        $totalAcara = AcaraBuddhist::count();
+        $totalArticles = Article::count(); // ⭐ TAMBAHKAN INI
+
+        // ⭐ AMBIL 5 ARTIKEL TERBARU
+        $recentArticles = Article::orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Kalender
+        $tahun = $request->input('tahun', now()->year);
+        $bulan = $request->input('bulan', now()->month);
+
+        $tanggalPertama = Carbon::createFromDate($tahun, $bulan, 1);
+
+        // Ambil fase bulan untuk bulan ini
+        $faseBulan = FaseBulan::whereBetween('tanggal', [
+            $tanggalPertama->copy()->startOfMonth(),
+            $tanggalPertama->copy()->endOfMonth()
+        ])->get()->keyBy(function($item) {
+            return $item->tanggal->format('Y-m-d');
+        });
+
+        // Ambil acara Buddhist untuk bulan ini
+        $acaraBuddhist = AcaraBuddhist::whereBetween('tanggal', [
+            $tanggalPertama->copy()->startOfMonth(),
+            $tanggalPertama->copy()->endOfMonth()
+        ])->get()->keyBy(function($item) {
+            return $item->tanggal->format('Y-m-d');
+        });
+
+        // Aturan Uposatha
+        $aturanUposatha = collect([
+            'bulan_baru' => (object)[
+                'nama_acara' => 'Uposatha',
+                'warna' => '#06b6d4'
+            ],
+            'purnama' => (object)[
+                'nama_acara' => 'Uposatha',
+                'warna' => '#06b6d4'
+            ]
+        ]);
+
+        // Acara mendatang (3 acara terdekat)
+        $acaraMendatang = AcaraBuddhist::where('tanggal', '>=', now())
+            ->orderBy('tanggal', 'asc')
+            ->limit(3)
+            ->get();
 
         return view('dashboard', compact(
-            'totalDhammaVachana',
-            'publishedCount',
-            'draftCount',
-            'totalViews',
-            'recentContent',
-            'recentActivity'
+            'totalEbooks',
+            'totalDhammavachana',
+            'totalAcara',
+            'totalArticles',
+            'recentArticles',
+            'tahun',
+            'bulan',
+            'tanggalPertama',
+            'faseBulan',
+            'acaraBuddhist',
+            'aturanUposatha',
+            'acaraMendatang'
         ));
     }
 }

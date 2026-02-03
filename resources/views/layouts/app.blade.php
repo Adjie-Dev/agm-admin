@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    @stack('styles')
     <style>
         * {
             font-family: 'Outfit', sans-serif;
@@ -72,6 +73,8 @@
             <nav class="flex-1 mt-4 px-3 space-y-1 overflow-y-auto">
                 <p class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">MENU</p>
 
+
+                {{-- Dashboard --}}
                 <a href="{{ route('dashboard') }}"
                    class="group flex items-center space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('dashboard') ? 'bg-slate-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}"
                    @click="sidebarOpen = false">
@@ -81,6 +84,8 @@
                     <span class="font-medium">Dashboard</span>
                 </a>
 
+
+                {{-- Articles --}}
                 <a href="{{ route('articles.index') }}"
                    class="group flex items-center space-x-3 px-3 py-3 rounded-xl transition-all text-gray-300 hover:bg-gray-800 hover:text-white"
                    @click="sidebarOpen = false">
@@ -91,6 +96,7 @@
                     <span class="font-medium">Artikel</span>
                 </a>
 
+                {{-- digital book --}}
                 <div x-data="{ formsOpen: {{ request()->routeIs('dhammavachana.*') || request()->routeIs('ebooks.*') ? 'true' : 'false' }} }">
                     <button @click.stop="formsOpen = !formsOpen" class="w-full group flex items-center justify-between space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('dhammavachana.*') || request()->routeIs('ebooks.*') ? 'bg-slate-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
                         <div class="flex items-center space-x-3">
@@ -114,12 +120,42 @@
                          style="display: none;"
                          @click.stop>
                         <a href="{{ route('dhammavachana.index') }}"
-                            class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('dhammavachana.*') ? ' text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">
+                            class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('dhammavachana.*') ? ' text-white' : 'text-gray-400 hover:text-white' }}">
                             <span class="font-medium">Dhamma Vācanā</span>
                         </a>
                         <a href="{{ route('ebooks.index') }}"
-                            class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('ebooks.*') ? ' text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">
+                            class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('ebooks.*') ? ' text-white' : 'text-gray-400 hover:text-white' }}">
                             <span class="font-medium">E-Book</span>
+                        </a>
+                    </div>
+                </div>
+
+                {{-- pali vãcanā --}}
+                <div x-data="{ formsOpen: {{ request()->routeIs('dhammavachana.*') || request()->routeIs('ebooks.*') ? 'true' : 'false' }} }">
+                    <button @click.stop="formsOpen = !formsOpen" class="w-full group flex items-center justify-between space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('dhammavachana.*') || request()->routeIs('ebooks.*') ? 'bg-slate-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                        <div class="flex items-center space-x-3">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                            <span class="font-medium">Pali Vãcanã</span>
+                        </div>
+                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': formsOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="formsOpen"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 transform translate-y-0"
+                         x-transition:leave-end="opacity-0 transform -translate-y-2"
+                         class="ml-6 mt-2 space-y-2"
+                         style="display: none;"
+                         @click.stop>
+                        <a href="{{ route('pathama-puja.index') }}"
+                            class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('dhammavachana.*') ? ' text-white' : 'text-gray-400 hover:text-white' }}">
+                            <span class="font-medium">Pathama Puja</span>
                         </a>
                     </div>
                 </div>
@@ -150,8 +186,7 @@
 
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <!-- Header -->
-            <header class="bg-gray-900/50 backdrop-blur-md border-b border-gray-700/50 px-6 py-4 shadow-lg">
+            <header class="bg-gray-900/70 backdrop-blur-md border-b border-gray-700/70 px-6 py-4 shadow-lg relative z-50">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white transition">
@@ -172,14 +207,18 @@
                             <span class="text-sm text-gray-300 font-medium" id="currentDate"></span>
                         </div>
 
-
-                        <!-- User Avatar -->
                         <div x-data="{ userMenuOpen: false }" class="relative">
                             <button @click="userMenuOpen = !userMenuOpen" class="flex items-center space-x-3 px-3 py-2 hover:border-white rounded-xl transition">
-                                <img src="{{ asset('images/user-avatar.png') }}" alt="User" class="w-8 h-8 rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Admin') }}&background=6366f1&color=fff'">
+                                @if(Auth::user()->profile_photo)
+                                    <img src="{{ asset('storage/' . Auth::user()->profile_photo) }}?t={{ time() }}" alt="User" class="w-8 h-8 rounded-full object-cover">
+                                @else
+                                    <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
+                                        <span class="text-xs font-bold text-white">{{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</span>
+                                    </div>
+                                @endif
                                 <div class="hidden md:block text-start">
-                                    <p class="text-sm font-semibold text-white">Adjie</p>
-                                    <p class="text-xs text-gray-400">Web Developer</p>
+                                    <p class="text-sm font-semibold text-white">{{ Auth::user()->name }}</p>
+                                    <p class="text-xs text-gray-400">{{ Auth::user()->role === 'admin' ? 'Administrator' : 'User' }}</p>
                                 </div>
                                 <svg class="w-4 h-4 text-gray-400 transition-transform" :class="{ 'rotate-180': userMenuOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -194,9 +233,9 @@
                                  x-transition:leave="transition ease-in duration-75"
                                  x-transition:leave-start="transform opacity-100 scale-100"
                                  x-transition:leave-end="transform opacity-0 scale-95"
-                                 class="absolute right-0 mt-2 w-48 bg-gray-800/90 backdrop-blur-md rounded-xl shadow-2xl py-2 z-50 border border-gray-700/50"
+                                 class="absolute right-0 mt-2 w-48 bg-gray-700/50 backdrop-blur-md rounded-xl shadow-2xl py-2 z-[9999] border border-gray-700/50"
                                  style="display: none;">
-                                <a href="{{ route('dashboard') }}" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition">
+                                <a href="{{ route('profile.show') }}" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-400 hover:text-white transition">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                     </svg>
@@ -205,7 +244,7 @@
                                 <div class="h-px bg-gray-700/50 my-2"></div>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button type="submit" class="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-400 hover:bg-gray-700 hover:text-red-300 transition">
+                                    <button type="submit" class="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 transition">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                                         </svg>
@@ -237,5 +276,6 @@
         updateDate();
         setInterval(updateDate, 1000);
     </script>
+    @stack('scripts')
 </body>
 </html>
