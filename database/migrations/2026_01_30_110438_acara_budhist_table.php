@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('nama'); // Nama acara
             $table->text('deskripsi')->nullable();
             $table->date('tanggal')->nullable()->comment('Null jika otomatis dari fase bulan');
+            $table->time('waktu_mulai')->nullable();
+            $table->time('waktu_selesai')->nullable();
             $table->foreignId('fase_bulan_id')->nullable()->constrained('fase_bulan')->onDelete('cascade');
             $table->boolean('berulang')->default(false)->comment('Apakah berulang tiap tahun');
             $table->string('warna')->default('#6366f1')->comment('Warna highlight di kalender');

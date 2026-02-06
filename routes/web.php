@@ -3,12 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController; // TAMBAH INI
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DhammavachanaController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\EbookController;
 use App\Http\Controllers\KalenderBuddhistController;
 use App\Http\Controllers\PathamaPujaController;
+use App\Http\Controllers\PujaPagiController;
 
 Route::redirect('/', '/login');
 
@@ -27,7 +28,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
-    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update'); // TAMBAH INI
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
 
     Route::resource('dhammavachana', DhammavachanaController::class);
 
@@ -37,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('articles', ArticleController::class);
     Route::resource('ebooks', EbookController::class);
     Route::resource('pathama-puja', PathamaPujaController::class);
+    Route::resource('puja-pagi', PujaPagiController::class);
 
     // Routes untuk Kalender Buddhist
     Route::prefix('kalender-buddhist')->name('kalender-buddhist.')->group(function () {

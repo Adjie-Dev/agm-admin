@@ -44,7 +44,7 @@ class KalenderBuddhistController extends Controller
 
             return view('kalender-buddhist.index', compact(
             'tahun',
-            'bulan',  // <-- Pastikan ini ada
+            'bulan',
             'tanggalPertama',
             'faseBulan',
             'acaraBuddhist',
@@ -70,7 +70,9 @@ class KalenderBuddhistController extends Controller
             'nama' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
             'tanggal' => 'required|date',
-            'warna' => 'nullable|string|max:7',
+            'waktu_mulai' => 'nullable|date_format:H:i',
+            'waktu_selesai' => 'nullable|date_format:H:i',
+            'warna' => 'required|string|max:30',
             'berulang' => 'boolean',
         ]);
 
@@ -101,7 +103,9 @@ class KalenderBuddhistController extends Controller
             'nama' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
             'tanggal' => 'required|date',
-            'warna' => 'nullable|string|max:7',
+            'waktu_mulai' => 'nullable|date_format:H:i',
+            'waktu_selesai' => 'nullable|date_format:H:i',
+            'warna' => 'required|string|max:30',
             'berulang' => 'boolean',
             'aktif' => 'boolean',
         ]);

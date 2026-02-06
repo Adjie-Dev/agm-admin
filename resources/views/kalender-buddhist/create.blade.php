@@ -13,18 +13,25 @@
             <!-- Tipe Acara -->
             <div class="mb-6">
                 <label class="block text-sm font-semibold text-gray-300 mb-2">Tipe Acara</label>
-                <select name="tipe_acara" required
-                        class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-                    <option value="">Pilih Tipe Acara</option>
-                    <option value="waisak">Hari Raya Waisak</option>
-                    <option value="magha_puja">Magha Puja</option>
-                    <option value="asalha_puja">Asalha Puja</option>
-                    <option value="kathina">Kathina</option>
-                    <option value="vassa_mulai">Awal Vassa</option>
-                    <option value="vassa_selesai">Akhir Vassa</option>
-                    <option value="pavarana">Pavarana</option>
-                    <option value="custom">Khusus</option>
-                </select>
+                <div class="relative">
+                    <select name="tipe_acara" id="tipe_acara" required
+                            class="w-full px-4 py-3 pr-10 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition appearance-none">
+                        <option value="">Pilih Tipe Acara</option>
+                        <option value="waisak">Hari Raya Waisak</option>
+                        <option value="magha_puja">Magha Puja</option>
+                        <option value="asadha_puja">Asadha Puja</option>
+                        <option value="kathina">Kathina</option>
+                        <option value="vassa_mulai">Awal Vassa</option>
+                        <option value="vassa_selesai">Akhir Vassa</option>
+                        <option value="pavarana">Pavarana</option>
+                        <option value="custom">Khusus</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7-7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
                 @error('tipe_acara')
                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
                 @enderror
@@ -62,13 +69,35 @@
                 @enderror
             </div>
 
-            <!-- Warna -->
+            <!-- Waktu Mulai -->
             <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-300 mb-2">Waktu Mulai</label>
+                <input type="time" name="waktu_mulai" value="{{ old('waktu_mulai') }}"
+                       class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                @error('waktu_mulai')
+                <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Waktu Selesai -->
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-300 mb-2">Waktu Selesai</label>
+                <input type="time" name="waktu_selesai" value="{{ old('waktu_selesai') }}"
+                       class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                @error('waktu_selesai')
+                <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Warna -->
+            <div class="mb-6" id="warna_container">
                 <label class="block text-sm font-semibold text-gray-300 mb-2">Warna Highlight</label>
                 <div class="flex items-center space-x-4">
-                    <input type="color" name="warna" value="{{ old('warna', '#6366f1') }}"
-                           class="h-12 w-20 bg-slate-700/50 border border-slate-600 rounded-xl cursor-pointer">
-                    <span class="text-sm text-gray-400">Pilih warna untuk highlight di kalender</span>
+                    <input type="color" id="warna_input" value="{{ old('warna', '#6366f1') }}"
+                           class="h-12 w-20 bg-slate-700/50 border border-slate-600 rounded-xl cursor-pointer"
+                           disabled>
+                    <input type="hidden" name="warna" id="warna_hidden" value="{{ old('warna', '#6366f1') }}">
+                    <span class="text-sm text-gray-400" id="warna_info">Pilih tipe acara untuk menentukan warna</span>
                 </div>
                 @error('warna')
                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
@@ -101,4 +130,69 @@
         </form>
     </div>
 </div>
+
+<script>
+    const DEVELOPER_OPACITY = 0.2; // Range: 0.0 - 1.0 (0.2 = 20% opacity)
+
+    function hexToRgba(hex, opacity) {
+        hex = hex.replace('#', '');
+
+        let r, g, b;
+        if (hex.length === 3) {
+            r = parseInt(hex[0] + hex[0], 16);
+            g = parseInt(hex[1] + hex[1], 16);
+            b = parseInt(hex[2] + hex[2], 16);
+        } else {
+            r = parseInt(hex.substring(0, 2), 16);
+            g = parseInt(hex.substring(2, 4), 16);
+            b = parseInt(hex.substring(4, 6), 16);
+        }
+
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+
+    const warnaAcara = {
+        'waisak': '#fbbf24',
+        'magha_puja': '#a78bfa',
+        'asadha_puja': '#34d399',
+        'kathina': '#f87171',
+        'vassa_mulai': '#60a5fa',
+        'vassa_selesai': '#fb923c',
+        'pavarana': '#ec4899',
+        'custom': '#6366f1'
+    };
+
+    const tipeAcaraSelect = document.getElementById('tipe_acara');
+    const warnaInput = document.getElementById('warna_input');
+    const warnaHidden = document.getElementById('warna_hidden');
+    const warnaInfo = document.getElementById('warna_info');
+
+    function updateWarna() {
+        const currentHex = warnaInput.value;
+        warnaHidden.value = hexToRgba(currentHex, DEVELOPER_OPACITY);
+    }
+
+    tipeAcaraSelect.addEventListener('change', function() {
+        const tipeAcara = this.value;
+
+        if (tipeAcara === '') {
+            warnaInput.value = '#6366f1';
+            warnaInput.disabled = true;
+            warnaInfo.textContent = 'Pilih tipe acara untuk menentukan warna';
+        } else if (tipeAcara === 'custom') {
+            warnaInput.value = '#6366f1';
+            warnaInput.disabled = false;
+            warnaInfo.textContent = 'Pilih warna custom untuk acara khusus';
+        } else {
+            warnaInput.value = warnaAcara[tipeAcara];
+            warnaInput.disabled = true;
+            warnaInfo.textContent = 'Warna otomatis berdasarkan tipe acara';
+        }
+        updateWarna();
+    });
+
+    warnaInput.addEventListener('input', function() {
+        updateWarna();
+    });
+</script>
 @endsection

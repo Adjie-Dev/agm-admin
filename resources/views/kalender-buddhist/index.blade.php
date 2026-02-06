@@ -77,12 +77,12 @@
          x-data="weekHeaderData()"
          x-init="generateWeekDates()"
          class="bg-slate-800/70 backdrop-blur-sm rounded-xl mb-4 border border-slate-700/50 shadow-xl">
-        <div class="grid grid-cols-7 gap-1 p-2">
+        <div class="grid grid-cols-7 gap-2 p-3">
             <template x-for="(day, index) in weekDates" :key="index">
-                <div class="text-center p-3 rounded-lg transition-all duration-300 cursor-pointer"
-                     :class="day.isToday ? 'bg-indigo-600 text-white shadow-lg scale-105' : 'bg-slate-700/30 text-white hover:bg-slate-700/50'"
+                <div class="text-center p-2 rounded-lg transition-all duration-300 cursor-pointer"
+                     :class="day.isToday ? 'border-2 border-indigo-500 text-white' : 'bg-slate-700/30 text-white hover:bg-slate-700/50'"
                      @click="navigateToDate(day.fullDate)">
-                    <div class="text-2xl font-bold" x-text="day.date"></div>
+                    <div class="text-lg font-bold" x-text="day.date"></div>
                     <div class="text-xs uppercase font-semibold tracking-wider" x-text="day.name"></div>
                 </div>
             </template>
@@ -97,125 +97,143 @@
 
                 <!-- DAILY VIEW - Google Calendar Style -->
                 <div x-show="currentView === 'daily'" x-transition>
-                    @php
-                        $today = \Carbon\Carbon::today();
-                        $todayStr = $today->format('Y-m-d');
-                        $acaraToday = $acaraBuddhist->get($todayStr);
-                        $faseBulanToday = $faseBulan->get($todayStr);
-                        $uposathaToday = null;
-                        if ($faseBulanToday && $faseBulanToday->adalahHariUposatha()) {
-                            $uposathaToday = $aturanUposatha->get($faseBulanToday->fase);
-                        }
-                    @endphp
-
-                    <!-- Header Tanggal -->
+                    <!-- Header Tanggal - Dynamic with Alpine -->
                     <div class="mb-4 pb-3 border-b border-slate-600/50">
-                        <h3 class="text-xl font-bold text-white">{{ $today->locale('id')->isoFormat('dddd, D MMMM YYYY') }}</h3>
+                        <h3 class="text-xl font-bold text-white" x-text="getHeaderTitle()"></h3>
                     </div>
 
                     <!-- Grid dengan Time Sidebar -->
                     <div class="flex max-h-[700px] overflow-y-auto">
                         <!-- Sidebar Waktu -->
                         <div class="w-16 flex-shrink-0 border-r border-slate-600/30 pr-2">
-                            @for($hour = 0; $hour < 24; $hour++)
+                            <template x-for="hour in 24" :key="hour">
                                 <div class="h-12 flex items-start justify-end text-xs text-gray-500 font-medium">
-                                    {{ sprintf('%02d:00', $hour) }}
+                                    <span x-text="String(hour - 1).padStart(2, '0') + ':00'"></span>
                                 </div>
-                            @endfor
+                            </template>
                         </div>
 
                         <!-- Area Event -->
                         <div class="flex-1 pl-4 relative">
-                            @for($hour = 0; $hour < 24; $hour++)
+                            <template x-for="hour in 24" :key="hour">
                                 <div class="h-12 border-b border-slate-700/30"></div>
-                            @endfor
+                            </template>
 
-                            <!-- Event Display -->
-                            @if($uposathaToday || $acaraToday)
-                                <div class="absolute top-24 left-4 right-4 rounded-lg p-4 shadow-lg cursor-pointer hover:shadow-xl transition"
-                                     style="background-color: {{ $acaraToday ? $acaraToday->warna : $uposathaToday->warna }};">
-                                    <h4 class="text-lg font-bold text-white mb-1">
-                                        {{ $acaraToday ? $acaraToday->nama : $uposathaToday->nama_acara }}
-                                    </h4>
-                                    @if($acaraToday && $acaraToday->deskripsi)
-                                        <p class="text-sm text-white/90">{{ $acaraToday->deskripsi }}</p>
-                                    @endif
-                                </div>
-                            @endif
+                            <!-- Event Display - Dynamic based on currentDate -->
+                            @php
+                                // Prepare events data untuk JavaScript
+                                $eventsForJs = [];
+
+                                // Cek tipe data $acaraBuddhist
+                                if ($acaraBuddhist instanceof \Illuminate\Support\Collection) {
+                                    // Jika Collection, loop langsung
+                                    foreach($acaraBuddhist as $acara) {
+                                        $tanggalKey = $acara->tanggal instanceof \Carbon\Carbon
+                                            ? $acara->tanggal->format('Y-m-d')
+                                            : (string)$acara->tanggal;
+
+                                        $eventsForJs[$tanggalKey] = [
+                                            'nama' => $acara->nama,
+                                            'deskripsi' => $acara->deskripsi ?? '',
+                                            'waktu_mulai' => $acara->waktu_mulai ?? '',
+                                            'waktu_selesai' => $acara->waktu_selesai ?? '',
+                                            'warna' => $acara->warna
+                                        ];
+                                    }
+                                } else {
+                                    // Jika array dengan key tanggal
+                                    foreach($acaraBuddhist as $tanggal => $acara) {
+                                        if (is_object($acara)) {
+                                            $eventsForJs[$tanggal] = [
+                                                'nama' => $acara->nama,
+                                                'deskripsi' => $acara->deskripsi ?? '',
+                                                'waktu_mulai' => $acara->waktu_mulai ?? '',
+                                                'waktu_selesai' => $acara->waktu_selesai ?? '',
+                                                'warna' => $acara->warna
+                                            ];
+                                        }
+                                    }
+                                }
+                            @endphp
+
+                            <div x-data="dailyEventDisplay()"
+                                 data-events='@json($eventsForJs)'
+                                 x-init="loadEvents()">
+                                <template x-if="currentEvent">
+                                    <div class="absolute left-4 right-4 rounded-lg p-4 shadow-lg cursor-pointer hover:shadow-xl transition"
+                                         :style="'background-color: ' + currentEvent.warna + '; top: ' + getEventPosition(currentEvent) + 'px;'">
+                                        <template x-if="currentEvent.waktu_mulai">
+                                            <div class="text-xs text-white/80 mb-1">
+                                                <span x-text="currentEvent.waktu_mulai.substring(0, 5)"></span>
+                                                <template x-if="currentEvent.waktu_selesai">
+                                                    <span> - <span x-text="currentEvent.waktu_selesai.substring(0, 5)"></span></span>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <h4 class="text-lg font-bold text-white mb-1" x-text="currentEvent.nama"></h4>
+                                        <template x-if="currentEvent.deskripsi">
+                                            <p class="text-sm text-white/90" x-text="currentEvent.deskripsi"></p>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- WEEKLY VIEW - Google Calendar Style -->
-                <div x-show="currentView === 'weekly'" x-transition>
-                    @php
-                        $weekStart = \Carbon\Carbon::now()->startOfWeek(Carbon\Carbon::MONDAY);
-                        $weekEnd = \Carbon\Carbon::now()->endOfWeek(Carbon\Carbon::SUNDAY);
-                    @endphp
-
+                <div x-show="currentView === 'weekly'" x-transition x-data="weeklyViewData()" x-init="initWeekly()">
                     <!-- Header Hari -->
                     <div class="flex border-b border-slate-600/50 mb-4 pb-2">
                         <div class="w-16"></div>
-                        @php $weekDay = $weekStart->copy(); @endphp
-                        @while($weekDay <= $weekEnd)
+                        <template x-for="(day, index) in weekDays" :key="index">
                             <div class="flex-1 text-center">
-                                <div class="text-xs text-gray-400 uppercase font-semibold">{{ $weekDay->locale('id')->isoFormat('ddd') }}</div>
-                                <div class="text-2xl font-bold {{ $weekDay->isToday() ? 'text-indigo-400' : 'text-white' }} mt-1">
-                                    {{ $weekDay->day }}
-                                </div>
+                                <div class="text-xs text-gray-400 uppercase font-semibold" x-text="day.dayName"></div>
+                                <div class="text-2xl font-bold mt-1"
+                                     :class="day.isToday ? 'text-indigo-400' : 'text-white'"
+                                     x-text="day.day"></div>
                             </div>
-                            @php $weekDay->addDay(); @endphp
-                        @endwhile
+                        </template>
                     </div>
 
                     <!-- Grid dengan Time Sidebar -->
                     <div class="flex max-h-[600px] overflow-y-auto">
                         <!-- Sidebar Waktu -->
                         <div class="w-16 flex-shrink-0 border-r border-slate-600/30 pr-2">
-                            @for($hour = 0; $hour < 24; $hour++)
+                            <template x-for="hour in 24" :key="hour">
                                 <div class="h-12 flex items-start justify-end text-xs text-gray-500 font-medium">
-                                    {{ sprintf('%02d:00', $hour) }}
+                                    <span x-text="String(hour - 1).padStart(2, '0') + ':00'"></span>
                                 </div>
-                            @endfor
+                            </template>
                         </div>
 
                         <!-- Area Event per Hari -->
                         <div class="flex-1 flex">
-                            @php $weekDay = $weekStart->copy(); @endphp
-                            @while($weekDay <= $weekEnd)
-                                @php
-                                    $dayStr = $weekDay->format('Y-m-d');
-                                    $acaraDay = $acaraBuddhist->get($dayStr);
-                                    $faseBulanDay = $faseBulan->get($dayStr);
-                                    $uposathaDay = null;
-                                    if ($faseBulanDay && $faseBulanDay->adalahHariUposatha()) {
-                                        $uposathaDay = $aturanUposatha->get($faseBulanDay->fase);
-                                    }
-                                @endphp
-
+                            <template x-for="(day, index) in weekDays" :key="index">
                                 <div class="flex-1 border-r border-slate-700/30 relative">
-                                    @for($hour = 0; $hour < 24; $hour++)
+                                    <template x-for="hour in 24" :key="hour">
                                         <div class="h-12 border-b border-slate-700/30"></div>
-                                    @endfor
+                                    </template>
 
                                     <!-- Event Display -->
-                                    @if($uposathaDay || $acaraDay)
-                                        <div class="absolute top-24 left-1 right-1 rounded p-2 text-xs cursor-pointer hover:shadow-lg transition"
-                                             style="background-color: {{ $acaraDay ? $acaraDay->warna : $uposathaDay->warna }};">
-                                            <div class="font-bold text-white truncate">
-                                                {{ $acaraDay ? $acaraDay->nama : $uposathaDay->nama_acara }}
-                                            </div>
+                                    <template x-if="day.event">
+                                        <div class="absolute left-1 right-1 rounded p-2 text-xs cursor-pointer hover:shadow-lg transition"
+                                             :style="'background-color: ' + day.event.warna + '; top: ' + getEventPosition(day.event) + 'px;'">
+                                            <template x-if="day.event.waktu_mulai">
+                                                <div class="text-[10px] text-white/80 mb-0.5">
+                                                    <span x-text="day.event.waktu_mulai.substring(0, 5)"></span>
+                                                </div>
+                                            </template>
+                                            <div class="font-bold text-white truncate" x-text="day.event.nama"></div>
                                         </div>
-                                    @endif
+                                    </template>
                                 </div>
-
-                                @php $weekDay->addDay(); @endphp
-                            @endwhile
+                            </template>
                         </div>
                     </div>
                 </div>
 
-                <!-- MONTHLY VIEW (Tetap sama) -->
+                <!-- MONTHLY VIEW -->
                 <div x-show="currentView === 'monthly'" x-transition>
                     <div class="grid grid-cols-7 gap-3">
                         @php
@@ -228,30 +246,29 @@
                                 $tanggalStr = $tanggalSekarang->format('Y-m-d');
                                 $adaDiBulanIni = $tanggalSekarang->month == $bulan;
                                 $hariIni = $tanggalSekarang->isToday();
-                                $faseBulanHariIni = $faseBulan->get($tanggalStr);
                                 $acaraHariIni = $acaraBuddhist->get($tanggalStr);
-
-                                $uposathaHariIni = null;
-                                if ($faseBulanHariIni && $faseBulanHariIni->adalahHariUposatha()) {
-                                    $uposathaHariIni = $aturanUposatha->get($faseBulanHariIni->fase);
-                                }
                             @endphp
 
-                            <div class="min-h-[140px] rounded-xl border {{ $hariIni ? 'ring-2 ring-indigo-500' : '' }} overflow-hidden {{ $adaDiBulanIni ? 'border-slate-600/50' : 'border-slate-800/50' }}">
-                                @if($uposathaHariIni || $acaraHariIni)
+                            <div class="min-h-[140px] rounded-xl border {{ $hariIni ? 'ring-2 ring-indigo-500/70' : '' }} overflow-hidden {{ $adaDiBulanIni ? 'border-slate-600/50' : 'border-slate-800/50' }}">
+                                @if($acaraHariIni)
                                     <div class="h-full flex flex-col cursor-pointer hover:scale-105 transition-transform"
-                                         style="background-color: {{ $acaraHariIni ? $acaraHariIni->warna : $uposathaHariIni->warna }};">
+                                         style="background-color: {{ $acaraHariIni->warna }};">
                                         <div class="p-3 pb-2">
                                             <div class="text-base font-bold text-white/90 mb-2">
                                                 {{ $tanggalSekarang->day }}
                                             </div>
                                         </div>
                                         <div class="flex-1 px-3 pb-3">
+                                            @if($acaraHariIni->waktu_mulai)
+                                                <div class="text-[10px] text-white/80 mb-1">
+                                                    {{ substr($acaraHariIni->waktu_mulai, 0, 5) }}@if($acaraHariIni->waktu_selesai) - {{ substr($acaraHariIni->waktu_selesai, 0, 5) }}@endif
+                                                </div>
+                                            @endif
                                             <div class="font-semibold text-white text-sm leading-tight mb-1">
-                                                {{ $acaraHariIni ? $acaraHariIni->nama : $uposathaHariIni->nama_acara }}
+                                                {{ $acaraHariIni->nama }}
                                             </div>
-                                            @if($acaraHariIni && $acaraHariIni->deskripsi)
-                                                <div class="text-white/90 text-xs leading-tight line-clamp-3">
+                                            @if($acaraHariIni->deskripsi)
+                                                <div class="text-white/90 text-xs leading-tight line-clamp-2">
                                                     {{ $acaraHariIni->deskripsi }}
                                                 </div>
                                             @endif
@@ -282,7 +299,7 @@
                             @endphp
 
                             <div class="bg-slate-700/40 rounded-xl p-4 border border-slate-600/50 hover:bg-slate-700/60 transition cursor-pointer"
-                                 @click="navigateToMonth({{ $tahun }}, {{ $m }})">
+                                @click="navigateToMonth({{ $tahun }}, {{ $m }}, true)">
                                 <!-- Header Bulan -->
                                 <h4 class="text-sm font-bold text-white mb-3 text-center">{{ $monthName }}</h4>
 
@@ -309,24 +326,19 @@
                                         @php
                                             $currentDate = \Carbon\Carbon::create($tahun, $m, $day);
                                             $dateStr = $currentDate->format('Y-m-d');
-                                            $faseBulanCheck = $faseBulan->get($dateStr);
                                             $acaraCheck = $acaraBuddhist->get($dateStr);
-                                            $uposathaCheck = null;
-                                            if ($faseBulanCheck && $faseBulanCheck->adalahHariUposatha()) {
-                                                $uposathaCheck = $aturanUposatha->get($faseBulanCheck->fase);
-                                            }
-                                            $hasEvent = $acaraCheck || $uposathaCheck;
+                                            $hasEvent = $acaraCheck;
                                             $isToday = $currentDate->isToday();
                                         @endphp
 
                                         <div class="aspect-square flex items-center justify-center">
                                             @if($hasEvent)
                                                 <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                                                     style="background-color: {{ $acaraCheck ? $acaraCheck->warna : $uposathaCheck->warna }};">
+                                                     style="background-color: {{ $acaraCheck->warna }};">
                                                     {{ $day }}
                                                 </div>
                                             @elseif($isToday)
-                                                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-indigo-500 text-indigo-400">
+                                                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-indigo-500/70 text-indigo-400">
                                                     {{ $day }}
                                                 </div>
                                             @else
@@ -392,7 +404,7 @@
                                     </div>
                                 </template>
                                 <template x-if="!day.hasEvent && day.isToday">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 border-dashed border-indigo-500 transition cursor-pointer"
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 border-dashed border-indigo-500/70 transition cursor-pointer"
                                          @click="navigateToDate(day.fullDate)">
                                         <span class="text-xs font-semibold text-white" x-text="day.day"></span>
                                     </div>
@@ -432,6 +444,11 @@
                                             <p class="text-xs text-gray-400">
                                                 {{ $acara->tanggal->locale('id')->isoFormat('dddd') }}
                                             </p>
+                                            @if($acara->waktu_mulai)
+                                                <p class="text-xs text-gray-400 mt-0.5">
+                                                    {{ substr($acara->waktu_mulai, 0, 5) }}@if($acara->waktu_selesai) - {{ substr($acara->waktu_selesai, 0, 5) }}@endif
+                                                </p>
+                                            @endif
                                         </div>
                                     </div>
 
@@ -476,6 +493,84 @@
 @endif
 
 <script>
+// Data events dari PHP - inject ke JavaScript
+window.calendarEvents = @json($acaraBuddhist);
+window.faseBulanData = @json($faseBulan);
+window.aturanUposathaData = @json($aturanUposatha);
+
+// Fungsi untuk daily event display - FIXED VERSION
+function dailyEventDisplay() {
+    return {
+        events: {},
+        currentEvent: null,
+
+        loadEvents() {
+            // Ambil data dari data attribute
+            const eventsData = this.$el.getAttribute('data-events');
+            if (eventsData) {
+                try {
+                    this.events = JSON.parse(eventsData);
+                } catch (e) {
+                    console.error('Failed to parse events:', e);
+                    this.events = {};
+                }
+            }
+
+            // Update event immediately
+            this.updateEvent();
+
+            // Watch untuk perubahan currentDate di parent
+            this.$watch('$root.currentDate', () => {
+                this.updateEvent();
+            });
+        },
+
+        updateEvent() {
+            // PERBAIKAN UTAMA: Ambil tanggal dari URL parameter terlebih dahulu
+            const urlParams = new URLSearchParams(window.location.search);
+            const dateParam = urlParams.get('date');
+
+            let dateStr;
+
+            if (dateParam) {
+                // Gunakan tanggal dari URL (ini yang dipencet dari mini calendar)
+                dateStr = dateParam;
+            } else {
+                // Fallback ke currentDate dari root component atau hari ini
+                const currentDate = this.$root.currentDate;
+
+                if (!currentDate) {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    dateStr = `${year}-${month}-${day}`;
+                } else {
+                    const year = currentDate.getFullYear();
+                    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(currentDate.getDate()).padStart(2, '0');
+                    dateStr = `${year}-${month}-${day}`;
+                }
+            }
+
+            // Set current event berdasarkan dateStr yang sudah benar
+            this.currentEvent = this.events[dateStr] || null;
+
+            console.log('Date from URL:', dateParam);
+            console.log('Using date:', dateStr);
+            console.log('Current event:', this.currentEvent);
+        },
+
+        getEventPosition(event) {
+            if (!event || !event.waktu_mulai) return 24;
+            const parts = event.waktu_mulai.split(':');
+            const hour = parseInt(parts[0]);
+            const minute = parseInt(parts[1]);
+            return (hour * 48) + (minute * 0.8);
+        }
+    }
+}
+
 // Fungsi untuk week header data
 function weekHeaderData() {
     return {
@@ -488,7 +583,7 @@ function weekHeaderData() {
             const monday = new Date(today);
             monday.setDate(today.getDate() + mondayOffset);
 
-            const dayNames = ['SENIN', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+            const dayNames = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU', 'MINGGU'];
 
             this.weekDates = [];
 
@@ -507,10 +602,64 @@ function weekHeaderData() {
         },
 
         navigateToDate(date) {
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
-            const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
-            window.location.href = url;
+            // Emit event untuk update main calendar tanpa reload
+            window.dispatchEvent(new CustomEvent('navigate-to-date', {
+                detail: { date: date }
+            }));
+        }
+    }
+}
+
+// Fungsi untuk weekly view data
+function weeklyViewData() {
+    return {
+        weekDays: [],
+
+        initWeekly() {
+            this.generateWeekDays();
+        },
+
+        generateWeekDays() {
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + mondayOffset);
+
+            const dayNamesShort = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+            this.weekDays = [];
+
+            for (let i = 0; i < 7; i++) {
+                const currentDate = new Date(monday);
+                currentDate.setDate(monday.getDate() + i);
+                const isToday = currentDate.toDateString() === today.toDateString();
+
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+
+                // Cek apakah ada event di tanggal ini
+                const event = window.calendarEvents[dateStr] || null;
+
+                this.weekDays.push({
+                    day: currentDate.getDate(),
+                    dayName: dayNamesShort[i],
+                    fullDate: currentDate,
+                    dateStr: dateStr,
+                    isToday: isToday,
+                    event: event
+                });
+            }
+        },
+
+        getEventPosition(event) {
+            if (!event || !event.waktu_mulai) return 24;
+            const parts = event.waktu_mulai.split(':');
+            const hour = parseInt(parts[0]);
+            const minute = parseInt(parts[1]);
+            return (hour * 48) + (minute * 0.8);
         }
     }
 }
@@ -521,12 +670,28 @@ function kalenderData() {
         currentYear: {{ $tahun }},
         currentMonth: {{ $bulan }},
         currentView: 'monthly',
+        currentDate: null, // untuk tracking tanggal di daily view
 
         init() {
             const savedView = localStorage.getItem('kalenderView');
             if (savedView) {
                 this.currentView = savedView;
             }
+
+            // PERBAIKAN: Initialize currentDate dari URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const dateParam = urlParams.get('date');
+            if (dateParam) {
+                this.currentDate = new Date(dateParam);
+            } else {
+                // Default ke hari ini
+                this.currentDate = new Date();
+            }
+
+            // Listen untuk date changes dari mini calendar
+            window.addEventListener('date-changed', (e) => {
+                this.currentDate = e.detail.date;
+            });
         },
 
         changeView(view) {
@@ -534,12 +699,31 @@ function kalenderData() {
             localStorage.setItem('kalenderView', view);
         },
 
+        getCurrentDateString() {
+            if (!this.currentDate) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            const year = this.currentDate.getFullYear();
+            const month = String(this.currentDate.getMonth() + 1).padStart(2, '0');
+            const day = String(this.currentDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        },
+
         getHeaderTitle() {
             const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
                                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
             switch(this.currentView) {
                 case 'daily':
+                    if (this.currentDate) {
+                        const dayName = dayNames[this.currentDate.getDay()];
+                        return `${dayName}, ${this.currentDate.getDate()} ${monthNames[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}`;
+                    }
                     const today = new Date();
                     return `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
                 case 'weekly':
@@ -552,9 +736,11 @@ function kalenderData() {
         },
 
         navigatePrevMonth() {
-            if (this.currentView === 'yearly') {
+            if (this.currentView === 'daily') {
+                this.navigatePrevDay();
+            } else if (this.currentView === 'yearly') {
                 this.currentYear--;
-                this.navigateToMonth(this.currentYear, this.currentMonth);
+                this.navigateToMonth(this.currentYear, this.currentMonth, false);
             } else {
                 let newMonth = this.currentMonth - 1;
                 let newYear = this.currentYear;
@@ -564,14 +750,16 @@ function kalenderData() {
                     newYear = this.currentYear - 1;
                 }
 
-                this.navigateToMonth(newYear, newMonth);
+                this.navigateToMonth(newYear, newMonth, false);
             }
         },
 
         navigateNextMonth() {
-            if (this.currentView === 'yearly') {
+            if (this.currentView === 'daily') {
+                this.navigateNextDay();
+            } else if (this.currentView === 'yearly') {
                 this.currentYear++;
-                this.navigateToMonth(this.currentYear, this.currentMonth);
+                this.navigateToMonth(this.currentYear, this.currentMonth, false);
             } else {
                 let newMonth = this.currentMonth + 1;
                 let newYear = this.currentYear;
@@ -581,18 +769,51 @@ function kalenderData() {
                     newYear = this.currentYear + 1;
                 }
 
-                this.navigateToMonth(newYear, newMonth);
+                this.navigateToMonth(newYear, newMonth, false);
             }
         },
 
-        navigateToMonth(year, month) {
+        navigatePrevDay() {
+            const prevDate = new Date(this.currentDate);
+            prevDate.setDate(prevDate.getDate() - 1);
+
+            const year = prevDate.getFullYear();
+            const month = prevDate.getMonth() + 1;
+            const day = prevDate.getDate();
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}&date=${dateStr}`;
+            window.location.href = url;
+        },
+
+        navigateNextDay() {
+            const nextDate = new Date(this.currentDate);
+            nextDate.setDate(nextDate.getDate() + 1);
+
+            const year = nextDate.getFullYear();
+            const month = nextDate.getMonth() + 1;
+            const day = nextDate.getDate();
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}&date=${dateStr}`;
+            window.location.href = url;
+        },
+
+        navigateToMonth(year, month, changeToMonthly = true) {
+            // Set view ke monthly jika dari yearly view (changeToMonthly = true)
+            if (changeToMonthly) {
+                localStorage.setItem('kalenderView', 'monthly');
+            }
+            // Navigate dengan reload untuk load data bulan yang baru
             const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
             window.location.href = url;
         }
     }
 }
 
-// Fungsi untuk mini kalender
+// ============================================================================
+// HANYA BAGIAN INI YANG DIUBAH - MINI CALENDAR DENGAN HIGHLIGHT EVENT
+// ============================================================================
 function miniCalendar() {
     return {
         miniYear: {{ $tahun }},
@@ -623,7 +844,6 @@ function miniCalendar() {
         },
 
         changeViewFromSidebar(view) {
-            // Trigger view change di main calendar
             window.dispatchEvent(new CustomEvent('change-calendar-view', { detail: view }));
         },
 
@@ -638,7 +858,10 @@ function miniCalendar() {
             dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
             const daysInMonth = lastDay.getDate();
-            const today = new Date();
+
+            // PERBAIKAN: Gunakan waktu real-time untuk deteksi hari ini
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
             this.calendarDays = [];
 
@@ -648,31 +871,44 @@ function miniCalendar() {
                 const day = prevMonthLastDay - i;
                 const prevMonth = this.miniMonth === 1 ? 12 : this.miniMonth - 1;
                 const prevYear = this.miniMonth === 1 ? this.miniYear - 1 : this.miniYear;
+                const dateStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                // PERBAIKAN: Cek apakah ada event di tanggal ini
+                let event = null;
+                if (window.calendarEvents && typeof window.calendarEvents === 'object') {
+                    event = window.calendarEvents[dateStr] || null;
+                }
 
                 this.calendarDays.push({
                     day: day,
-                    date: `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    date: dateStr,
                     fullDate: new Date(prevYear, prevMonth - 1, day),
                     isCurrentMonth: false,
-                    isToday: false,
-                    hasEvent: false,
-                    color: ''
+                    isToday: dateStr === todayStr,
+                    hasEvent: !!event,
+                    color: event ? event.warna : ''
                 });
             }
 
             // Current month days
             for (let day = 1; day <= daysInMonth; day++) {
                 const currentDate = new Date(this.miniYear, this.miniMonth - 1, day);
-                const isToday = currentDate.toDateString() === today.toDateString();
+                const dateStr = `${this.miniYear}-${String(this.miniMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                // PERBAIKAN: Cek apakah ada event di tanggal ini
+                let event = null;
+                if (window.calendarEvents && typeof window.calendarEvents === 'object') {
+                    event = window.calendarEvents[dateStr] || null;
+                }
 
                 this.calendarDays.push({
                     day: day,
-                    date: `${this.miniYear}-${String(this.miniMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    date: dateStr,
                     fullDate: currentDate,
                     isCurrentMonth: true,
-                    isToday: isToday,
-                    hasEvent: false,
-                    color: ''
+                    isToday: dateStr === todayStr,
+                    hasEvent: !!event,
+                    color: event ? event.warna : ''
                 });
             }
 
@@ -683,29 +919,42 @@ function miniCalendar() {
             for (let day = 1; day <= remainingCells; day++) {
                 const nextMonth = this.miniMonth === 12 ? 1 : this.miniMonth + 1;
                 const nextYear = this.miniMonth === 12 ? this.miniYear + 1 : this.miniYear;
+                const dateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                // PERBAIKAN: Cek apakah ada event di tanggal ini
+                let event = null;
+                if (window.calendarEvents && typeof window.calendarEvents === 'object') {
+                    event = window.calendarEvents[dateStr] || null;
+                }
 
                 this.calendarDays.push({
                     day: day,
-                    date: `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    date: dateStr,
                     fullDate: new Date(nextYear, nextMonth - 1, day),
                     isCurrentMonth: false,
-                    isToday: false,
-                    hasEvent: false,
-                    color: ''
+                    isToday: dateStr === todayStr,
+                    hasEvent: !!event,
+                    color: event ? event.warna : ''
                 });
             }
+
+            console.log('Mini Calendar Generated with events:', this.calendarDays.filter(d => d.hasEvent).length, 'events found');
         },
 
         navigateToDate(date) {
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
-            const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
+            const clickedYear = date.getFullYear();
+            const clickedMonth = date.getMonth() + 1;
+            const clickedDay = date.getDate();
+
+            // Selalu reload dengan parameter tanggal yang diklik dan view daily
+            localStorage.setItem('kalenderView', 'daily');
+            const dateStr = `${clickedYear}-${String(clickedMonth).padStart(2, '0')}-${String(clickedDay).padStart(2, '0')}`;
+            const url = `{{ route('kalender-buddhist.index') }}?tahun=${clickedYear}&bulan=${clickedMonth}&date=${dateStr}`;
             window.location.href = url;
         }
     }
 }
 
-// Listen untuk event dari sidebar
 window.addEventListener('change-calendar-view', (e) => {
     const view = e.detail;
     localStorage.setItem('kalenderView', view);

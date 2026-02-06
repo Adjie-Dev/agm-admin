@@ -17,6 +17,25 @@
         </a>
     </div>
 
+    <!-- Author Info -->
+    <div class="mb-6 bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+        <div class="flex items-center space-x-3">
+            @if(auth()->user()->profile_photo)
+            <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}"
+                 alt="{{ auth()->user()->name }}"
+                 class="w-10 h-10 rounded-full object-cover border-2 border-indigo-500">
+            @else
+            <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center border-2 border-indigo-500">
+                <span class="text-white font-semibold text-sm">{{ substr(auth()->user()->name, 0, 1) }}</span>
+            </div>
+            @endif
+            <div>
+                <p class="text-xs text-gray-400">Penulis</p>
+                <p class="text-sm font-semibold text-white">{{ auth()->user()->name }}</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Form Card -->
     <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 shadow-xl">
         <form action="{{ route('articles.store') }}" method="POST" enctype="multipart/form-data" id="articleForm">
@@ -35,23 +54,6 @@
                        placeholder="Masukkan judul artikel"
                        required>
                 @error('title')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Author -->
-            <div class="mb-6">
-                <label for="author" class="block text-sm font-semibold text-gray-300 mb-2">
-                    Penulis <span class="text-red-400">*</span>
-                </label>
-                <input type="text"
-                       name="author"
-                       id="author"
-                       value="{{ old('author') }}"
-                       class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
-                       placeholder="Masukkan nama penulis"
-                       required>
-                @error('author')
                 <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
                 @enderror
             </div>

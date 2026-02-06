@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Pathama Puja')
+@section('title', 'Edit Puja Pagi')
 
-@section('header', 'Edit Pathama Puja')
+@section('header', 'Edit Puja Pagi')
 
 @section('content')
 <div class="max-w-4xl mx-auto">
     <!-- Back Button -->
     <div class="mb-6">
-        <a href="{{ route('pathama-puja.index') }}"
+        <a href="{{ route('puja-pagi.index') }}"
            class="inline-flex items-center space-x-2 text-gray-400 hover:text-white transition-colors duration-200">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -22,7 +22,7 @@
         <div class="p-8">
             <h2 class="text-2xl font-bold text-white mb-6">Edit Section</h2>
 
-            <form action="{{ route('pathama-puja.update', $pathamaPuja) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('puja-pagi.update', $pujaPagi) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -36,8 +36,7 @@
                                name="urutan"
                                id="urutan"
                                min="1"
-                               max="17"
-                               value="{{ old('urutan', $pathamaPuja->urutan) }}"
+                               value="{{ old('urutan', $pujaPagi->urutan) }}"
                                required
                                class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 @error('urutan') border-red-500 @enderror">
                         @error('urutan')
@@ -53,9 +52,9 @@
                                name="judul"
                                id="judul"
                                maxlength="150"
-                               value="{{ old('judul', $pathamaPuja->judul) }}"
+                               value="{{ old('judul', $pujaPagi->judul) }}"
                                required
-                               placeholder="Contoh: Namokāra Aṭṭhaka"
+                               placeholder="Contoh: Vandanā"
                                class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 @error('judul') border-red-500 @enderror">
                         @error('judul')
                         <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
@@ -64,7 +63,7 @@
                 </div>
 
                 <!-- Current Audio Info -->
-                @if($pathamaPuja->audio_path)
+                @if($pujaPagi->audio_path)
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-300 mb-3">
                         Audio Saat Ini
@@ -78,28 +77,28 @@
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <p class="text-white font-medium">{{ $pathamaPuja->audio_nama_asli }}</p>
+                                    <p class="text-white font-medium">{{ $pujaPagi->audio_nama_asli }}</p>
                                     <div class="flex items-center space-x-3 mt-1 text-sm text-gray-400">
-                                        @if($pathamaPuja->durasi)
+                                        @if($pujaPagi->durasi)
                                         <span class="flex items-center space-x-1">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                             </svg>
-                                            <span>{{ $pathamaPuja->durasi }}</span>
+                                            <span>{{ $pujaPagi->durasi }}</span>
                                         </span>
                                         @endif
                                         <span class="flex items-center space-x-1">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                                             </svg>
-                                            <span>{{ $pathamaPuja->audio_ukuran_formatted }}</span>
+                                            <span>{{ $pujaPagi->audio_ukuran_formatted }}</span>
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             <div>
                                 <audio controls class="h-10">
-                                    <source src="{{ asset('storage/' . $pathamaPuja->audio_path) }}" type="{{ $pathamaPuja->audio_mime }}">
+                                    <source src="{{ asset('storage/' . $pujaPagi->audio_path) }}" type="{{ $pujaPagi->audio_mime }}">
                                     Browser Anda tidak mendukung audio player.
                                 </audio>
                             </div>
@@ -111,7 +110,7 @@
                 <!-- Audio Upload -->
                 <div class="mb-6">
                     <label for="audio" class="block text-sm font-medium text-gray-300 mb-2">
-                        {{ $pathamaPuja->audio_path ? 'Ganti File Audio' : 'Tambah File Audio' }}
+                        {{ $pujaPagi->audio_path ? 'Ganti File Audio' : 'Tambah File Audio' }}
                     </label>
                     <div class="relative">
                         <input type="file"
@@ -130,7 +129,7 @@
                                     <span class="font-semibold text-blue-400">Klik untuk upload</span> atau drag & drop
                                 </p>
                                 <p class="text-xs text-gray-500 mt-1">MP3, WAV, OGG hingga 50MB</p>
-                                @if($pathamaPuja->audio_path)
+                                @if($pujaPagi->audio_path)
                                 <p class="text-xs text-amber-400 mt-2">Upload file baru akan mengganti audio yang ada</p>
                                 @endif
                                 <p id="file-name" class="text-sm text-green-400 mt-2 hidden"></p>
@@ -151,7 +150,7 @@
                               id="deskripsi"
                               rows="4"
                               placeholder="Masukkan deskripsi singkat (opsional)..."
-                              class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 @error('deskripsi') border-red-500 @enderror">{{ old('deskripsi', $pathamaPuja->deskripsi) }}</textarea>
+                              class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 @error('deskripsi') border-red-500 @enderror">{{ old('deskripsi', $pujaPagi->deskripsi) }}</textarea>
                     @error('deskripsi')
                     <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                     @enderror
@@ -166,7 +165,7 @@
                               id="teks_pali"
                               rows="6"
                               placeholder="Masukkan teks dalam bahasa Pali..."
-                              class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono @error('teks_pali') border-red-500 @enderror">{{ old('teks_pali', $pathamaPuja->teks_pali) }}</textarea>
+                              class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono @error('teks_pali') border-red-500 @enderror">{{ old('teks_pali', $pujaPagi->teks_pali) }}</textarea>
                     @error('teks_pali')
                     <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                     @enderror
@@ -181,7 +180,7 @@
                               id="terjemahan"
                               rows="6"
                               placeholder="Masukkan terjemahan dalam bahasa Indonesia..."
-                              class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 @error('terjemahan') border-red-500 @enderror">{{ old('terjemahan', $pathamaPuja->terjemahan) }}</textarea>
+                              class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 @error('terjemahan') border-red-500 @enderror">{{ old('terjemahan', $pujaPagi->terjemahan) }}</textarea>
                     @error('terjemahan')
                     <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                     @enderror
@@ -194,7 +193,7 @@
                                name="aktif"
                                id="aktif"
                                value="1"
-                               {{ old('aktif', $pathamaPuja->aktif) ? 'checked' : '' }}
+                               {{ old('aktif', $pujaPagi->aktif) ? 'checked' : '' }}
                                class="w-5 h-5 bg-slate-900/50 border-slate-700/50 rounded text-blue-600 focus:ring-2 focus:ring-blue-500">
                         <span class="text-gray-300 font-medium">Aktifkan section ini</span>
                     </label>
@@ -205,7 +204,7 @@
 
                 <!-- Actions -->
                 <div class="flex items-center justify-end space-x-4">
-                    <a href="{{ route('pathama-puja.index') }}"
+                    <a href="{{ route('puja-pagi.index') }}"
                        class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-all duration-300">
                         Batal
                     </a>

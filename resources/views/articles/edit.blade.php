@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Artikel')
+@section('title', 'Buat Artikel')
 
-@section('header', 'Edit Artikel')
+@section('header', 'Buat Artikel Baru')
 
 @section('content')
 <div class="max-w-4xl mx-auto">
@@ -17,11 +17,29 @@
         </a>
     </div>
 
+    <!-- Author Info -->
+    <div class="mb-6 bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+        <div class="flex items-center space-x-3">
+            @if(auth()->user()->profile_photo)
+            <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}"
+                 alt="{{ auth()->user()->name }}"
+                 class="w-10 h-10 rounded-full object-cover border-2 border-indigo-500">
+            @else
+            <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center border-2 border-indigo-500">
+                <span class="text-white font-semibold text-sm">{{ substr(auth()->user()->name, 0, 1) }}</span>
+            </div>
+            @endif
+            <div>
+                <p class="text-xs text-gray-400">Penulis</p>
+                <p class="text-sm font-semibold text-white">{{ auth()->user()->name }}</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Form Card -->
     <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 shadow-xl">
-        <form action="{{ route('articles.update', $article) }}" method="POST" enctype="multipart/form-data" id="articleForm">
+        <form action="{{ route('articles.store') }}" method="POST" enctype="multipart/form-data" id="articleForm">
             @csrf
-            @method('PUT')
 
             <!-- Title -->
             <div class="mb-6">
@@ -31,28 +49,11 @@
                 <input type="text"
                        name="title"
                        id="title"
-                       value="{{ old('title', $article->title) }}"
+                       value="{{ old('title') }}"
                        class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
                        placeholder="Masukkan judul artikel"
                        required>
                 @error('title')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Author -->
-            <div class="mb-6">
-                <label for="author" class="block text-sm font-semibold text-gray-300 mb-2">
-                    Penulis <span class="text-red-400">*</span>
-                </label>
-                <input type="text"
-                       name="author"
-                       id="author"
-                       value="{{ old('author', $article->author) }}"
-                       class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
-                       placeholder="Masukkan nama penulis"
-                       required>
-                @error('author')
                 <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
                 @enderror
             </div>
@@ -69,7 +70,7 @@
                 </div>
 
                 <!-- Hidden textarea untuk submit -->
-                <textarea name="content_html" id="content_html" class="hidden">{{ old('content_html', $article->content_html) }}</textarea>
+                <textarea name="content_html" id="content_html" class="hidden">{{ old('content_html') }}</textarea>
 
                 <p class="mt-2 text-xs text-gray-500">Gunakan toolbar untuk memformat teks dan menambahkan gambar</p>
                 <p id="content-error" class="mt-2 text-sm text-red-400 hidden">Konten artikel harus diisi</p>
@@ -78,20 +79,10 @@
                 @enderror
             </div>
 
-            <!-- Current Thumbnail -->
-            @if($article->thumbnail)
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-300 mb-2">Thumbnail Saat Ini</label>
-                <img src="{{ asset('storage/' . $article->thumbnail) }}"
-                     alt="{{ $article->title }}"
-                     class="w-48 h-48 object-cover rounded-xl border border-slate-600">
-            </div>
-            @endif
-
             <!-- Thumbnail -->
             <div class="mb-6">
                 <label for="thumbnail" class="block text-sm font-semibold text-gray-300 mb-2">
-                    {{ $article->thumbnail ? 'Ganti Thumbnail' : 'Gambar Thumbnail' }}
+                    Gambar Thumbnail
                 </label>
                 <div class="relative">
                     <input type="file"
@@ -106,7 +97,7 @@
                             <svg class="mx-auto w-12 h-12 text-gray-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                             </svg>
-                            <p class="text-sm text-gray-400 mb-1">Klik untuk upload thumbnail baru</p>
+                            <p class="text-sm text-gray-400 mb-1">Klik untuk upload thumbnail</p>
                             <p class="text-xs text-gray-500">PNG, JPG, GIF maksimal 2MB</p>
                         </div>
                         <div class="hidden" id="image-preview">
@@ -120,30 +111,7 @@
             </div>
 
             <!-- Hidden field untuk published_at -->
-            <input type="hidden" name="published_at" id="published_at" value="{{ old('published_at', $article->published_at ? $article->published_at->format('Y-m-d H:i:s') : '') }}">
-
-            <!-- Status Info -->
-            @if($article->published_at)
-            <div class="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                <div class="flex items-center space-x-2 text-green-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span class="font-semibold">Status: Published</span>
-                </div>
-                <p class="text-sm text-gray-400 mt-1 ml-7">Dipublikasikan pada {{ $article->published_at->format('d M Y, H:i') }}</p>
-            </div>
-            @else
-            <div class="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
-                <div class="flex items-center space-x-2 text-yellow-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <span class="font-semibold">Status: Draft</span>
-                </div>
-                <p class="text-sm text-gray-400 mt-1 ml-7">Artikel ini belum dipublikasikan</p>
-            </div>
-            @endif
+            <input type="hidden" name="published_at" id="published_at" value="">
 
             <!-- Action Buttons -->
             <div class="flex items-center justify-between">
@@ -163,14 +131,14 @@
                         <span>Simpan sebagai Draft</span>
                     </button>
 
-                    <!-- Publish/Update Artikel -->
+                    <!-- Publish Artikel -->
                     <button type="button"
                             onclick="submitAsPublished()"
                             class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
-                        <span>{{ $article->published_at ? 'Update & Publish' : 'Publish Artikel' }}</span>
+                        <span>Publish Artikel</span>
                     </button>
                 </div>
             </div>
@@ -373,12 +341,6 @@ var quill = new Quill('#editor', {
     placeholder: 'Tulis konten artikel di sini...'
 });
 
-// Load existing content ke Quill editor
-const existingContent = document.getElementById('content_html').value;
-if (existingContent) {
-    quill.root.innerHTML = existingContent;
-}
-
 // Handle image upload
 quill.getModule('toolbar').addHandler('image', function() {
     selectLocalImage();
@@ -428,22 +390,17 @@ function submitAsDraft() {
 
 // Fungsi untuk submit sebagai published
 function submitAsPublished() {
-    // Jika sudah pernah dipublish, pertahankan tanggal original
-    // Jika belum pernah, set ke waktu sekarang
-    const currentPublishedAt = document.getElementById('published_at').value;
+    // Set published_at ke waktu sekarang
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
 
-    if (!currentPublishedAt) {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-
-        const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-        document.getElementById('published_at').value = formattedDate;
-    }
+    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    document.getElementById('published_at').value = formattedDate;
 
     // Validasi dan submit form
     validateAndSubmit();

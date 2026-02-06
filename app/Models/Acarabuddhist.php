@@ -16,6 +16,8 @@ class AcaraBuddhist extends Model
         'nama',
         'deskripsi',
         'tanggal',
+        'waktu_mulai',
+        'waktu_selesai',
         'fase_bulan_id',
         'berulang',
         'warna',

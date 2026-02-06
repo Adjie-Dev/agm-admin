@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Pathama Puja')
+@section('title', 'Puja Pagi')
 
-@section('header', 'Pathama Puja')
+@section('header', 'Puja Pagi')
 
 @section('content')
 <div class="max-w-7xl mx-auto">
@@ -22,10 +22,10 @@
     <!-- Header Section -->
     <div class="mb-6 flex items-center justify-between">
         <div>
-            <h2 class="text-2xl font-bold text-white mb-2">Daftar Pathama Puja</h2>
-            <p class="text-gray-400">Kelola konten audio Pathama Puja (1-17 section)</p>
+            <h2 class="text-2xl font-bold text-white mb-2">Daftar Puja Pagi</h2>
+            <p class="text-gray-400">Kelola konten audio Puja Pagi</p>
         </div>
-        <a href="{{ route('pathama-puja.create') }}"
+        <a href="{{ route('puja-pagi.create') }}"
             class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -55,7 +55,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-700/50">
-                    @forelse($pathamaPujas as $puja)
+                    @forelse($pujaPagis as $puja)
                     <tr class="hover:bg-slate-700/30 transition-colors duration-200">
                         <td class="px-6 py-4">
                             <div class="flex items-center justify-center w-10 h-10 bg-blue-500/10 rounded-lg">
@@ -128,7 +128,7 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center justify-end space-x-2">
-                                <a href="{{ route('pathama-puja.show', $puja) }}"
+                                <a href="{{ route('puja-pagi.show', $puja) }}"
                                     class="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all duration-200"
                                     title="Lihat Detail">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +139,7 @@
                                         </path>
                                     </svg>
                                 </a>
-                                <a href="{{ route('pathama-puja.edit', $puja) }}"
+                                <a href="{{ route('puja-pagi.edit', $puja) }}"
                                     class="p-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition-all duration-200"
                                     title="Edit">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +148,7 @@
                                         </path>
                                     </svg>
                                 </a>
-                                <form action="{{ route('pathama-puja.destroy', $puja) }}" method="POST"
+                                <form action="{{ route('puja-pagi.destroy', $puja) }}" method="POST"
                                     class="inline-block">
                                     @csrf
                                     @method('DELETE')
@@ -176,7 +176,7 @@
                                         d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z">
                                     </path>
                                 </svg>
-                                <p class="text-gray-400 text-lg">Belum ada data Pathama Puja</p>
+                                <p class="text-gray-400 text-lg">Belum ada data Puja Pagi</p>
                             </div>
                         </td>
                     </tr>
