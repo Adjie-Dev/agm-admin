@@ -6,11 +6,11 @@
     <title>Login - AGM Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen flex items-center justify-center p-4" style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('{{ asset('images/bg.jpg') }}') center/cover no-repeat fixed;">
+<body class="min-h-screen flex items-center justify-center p-4" style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('{{ asset('images/bg.webp') }}') center/cover no-repeat fixed;">
     <div class="w-full max-w-md">
         <div class="flex flex-col items-center mb-8">
             <div class="w-40 h-40 rounded-full bg-black flex items-center justify-center p-6 mb-4">
-                <img src="{{ asset('images/agm.png') }}" alt="AGM Digital" class="w-full h-full object-cover">
+                <img src="{{ asset('images/agm.webp') }}" alt="AGM Digital" class="w-full h-full object-cover">
             </div>
             <h2 class="text-white text-2xl font-bold">AGM Digital</h2>
         </div>

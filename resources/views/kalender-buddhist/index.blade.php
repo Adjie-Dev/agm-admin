@@ -36,7 +36,7 @@
 
             <!-- Tombol Action Kanan -->
             <div class="flex items-center space-x-3">
-                <a href="{{ route('kalender-buddhist.create') }}"
+                <a href="{{ route('kalender-buddhist.create', ['tahun' => $tahun, 'bulan' => $bulan]) }}"
                     class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition flex items-center space-x-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -326,7 +326,7 @@
                                         @php
                                             $currentDate = \Carbon\Carbon::create($tahun, $m, $day);
                                             $dateStr = $currentDate->format('Y-m-d');
-                                            $acaraCheck = $acaraBuddhist->get($dateStr);
+                                            $acaraCheck = $acaraBuddhistYear->get($dateStr);
                                             $hasEvent = $acaraCheck;
                                             $isToday = $currentDate->isToday();
                                         @endphp
@@ -395,25 +395,26 @@
                         <template x-for="day in calendarDays" :key="day.date">
                             <div class="aspect-square flex items-center justify-center">
                                 <template x-if="day.hasEvent">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"
-                                         :style="'background-color: ' + day.color"
-                                         @click="navigateToDate(day.fullDate)">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer border-2"
+                                        :class="day.isToday ? 'border-indigo-500' : 'border-transparent'"
+                                        :style="'background-color: ' + day.color"
+                                        @click="navigateToDate(day.fullDate)">
                                         <span class="text-xs font-semibold"
-                                              :class="day.isCurrentMonth ? 'text-white' : 'text-white/50'"
-                                              x-text="day.day"></span>
+                                            :class="day.isCurrentMonth ? 'text-white' : 'text-white/50'"
+                                            x-text="day.day"></span>
                                     </div>
                                 </template>
                                 <template x-if="!day.hasEvent && day.isToday">
                                     <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 border-dashed border-indigo-500/70 transition cursor-pointer"
-                                         @click="navigateToDate(day.fullDate)">
+                                        @click="navigateToDate(day.fullDate)">
                                         <span class="text-xs font-semibold text-white" x-text="day.day"></span>
                                     </div>
                                 </template>
                                 <template x-if="!day.hasEvent && !day.isToday">
                                     <span class="text-xs font-semibold hover:text-indigo-400 transition cursor-pointer"
-                                          :class="day.isCurrentMonth ? 'text-white' : 'text-gray-600'"
-                                          @click="navigateToDate(day.fullDate)"
-                                          x-text="day.day"></span>
+                                        :class="day.isCurrentMonth ? 'text-white' : 'text-gray-600'"
+                                        @click="navigateToDate(day.fullDate)"
+                                        x-text="day.day"></span>
                                 </template>
                             </div>
                         </template>
@@ -423,10 +424,22 @@
                 <!-- Daftar Acara Bulan Ini -->
                 <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 border border-slate-700/50 shadow-xl">
                     <h3 class="text-base font-bold text-white mb-4">Acara Bulan Ini</h3>
+                    @php
+                        // Pastikan sidebar hanya menampilkan acara di bulan yang sedang dipilih
+                        if (isset($acaraBuddhist) && $acaraBuddhist instanceof \Illuminate\Support\Collection) {
+                            $acaraForSidebar = $acaraBuddhist;
+                        } elseif (isset($acaraBuddhistYear) && $acaraBuddhistYear instanceof \Illuminate\Support\Collection) {
+                            $acaraForSidebar = $acaraBuddhistYear->filter(function($item) use ($bulan) {
+                                return $item->tanggal->month == $bulan;
+                            });
+                        } else {
+                            $acaraForSidebar = collect();
+                        }
+                    @endphp
 
-                    @if($acaraBuddhist->count() > 0)
+                    @if($acaraForSidebar->count() > 0)
                         <div class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                            @foreach($acaraBuddhist->sortBy('tanggal') as $acara)
+                            @foreach($acaraForSidebar->sortBy('tanggal') as $acara)
                                 <div class="rounded-xl p-3 bg-slate-700/30 border border-slate-600/50 hover:bg-slate-700/50 transition cursor-pointer">
                                     <!-- Header Event dengan Badge Tanggal -->
                                     <div class="flex items-start space-x-3 mb-2">
@@ -494,7 +507,11 @@
 
 <script>
 // Data events dari PHP - inject ke JavaScript
-window.calendarEvents = @json($acaraBuddhist);
+// Merge events untuk bulan ini dengan semua events tahun ini (jika ada)
+window.calendarEvents = {
+    ...@json($acaraBuddhistYear ?? []),
+    ...@json($acaraBuddhist)
+};
 window.faseBulanData = @json($faseBulan);
 window.aturanUposathaData = @json($aturanUposatha);
 
@@ -664,6 +681,114 @@ function weeklyViewData() {
     }
 }
 
+// Fungsi untuk yearly view data
+function yearlyViewData() {
+    return {
+        monthNames: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+        months: [],
+        currentYear: {{ $tahun }},
+
+        init() {
+            this.generateYearlyData();
+        },
+
+        generateYearlyData() {
+            this.months = [];
+
+            for (let m = 1; m <= 12; m++) {
+                const monthStart = new Date(this.currentYear, m - 1, 1);
+                const monthEnd = new Date(this.currentYear, m, 0);
+                const daysInMonth = monthEnd.getDate();
+                const firstDayOfWeek = monthStart.getDay();
+                const startDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+                const days = [];
+
+                // Empty cells for days before month starts
+                for (let i = 0; i < startDayOfWeek; i++) {
+                    days.push({
+                        dayNumber: '',
+                        date: '',
+                        hasEvent: false,
+                        isToday: false,
+                        inMonth: false,
+                        color: ''
+                    });
+                }
+
+                // Days in month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const currentDate = new Date(this.currentYear, m - 1, day);
+                    const dateStr = `${this.currentYear}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const event = window.calendarEvents[dateStr] || null;
+                    const isToday = dateStr === todayStr;
+
+                    days.push({
+                        dayNumber: day,
+                        date: dateStr,
+                        hasEvent: !!event,
+                        isToday: isToday,
+                        inMonth: true,
+                        color: event ? event.warna : ''
+                    });
+                }
+
+                // Empty cells for days after month ends
+                const totalCells = Math.ceil(days.length / 7) * 7;
+                for (let i = days.length; i < totalCells; i++) {
+                    days.push({
+                        dayNumber: '',
+                        date: '',
+                        hasEvent: false,
+                        isToday: false,
+                        inMonth: false,
+                        color: ''
+                    });
+                }
+
+                this.months.push({
+                    number: m,
+                    name: this.monthNames[m - 1],
+                    days: days
+                });
+            }
+
+            console.log('Yearly view data generated for year', this.currentYear);
+        },
+
+        navigateToMonth(year, month, changeToMonthly = true) {
+            // Fetch events untuk bulan yang akan ditampilkan sebelum navigate
+            fetch(`/api/calendar/events?tahun=${year}&bulan=${month}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Merge data baru dengan existing events
+                    window.calendarEvents = {
+                        ...window.calendarEvents,
+                        ...data
+                    };
+
+                    // Set view ke monthly jika dari yearly view (changeToMonthly = true)
+                    if (changeToMonthly) {
+                        localStorage.setItem('kalenderView', 'monthly');
+                    }
+                    // Navigate dengan reload untuk load data bulan yang baru
+                    const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
+                    window.location.href = url;
+                })
+                .catch(error => {
+                    console.error('Error loading events:', error);
+                    // Fallback: navigate without loading events first
+                    const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
+                    window.location.href = url;
+                });
+        }
+    }
+}
+
 // Fungsi untuk kalender utama
 function kalenderData() {
     return {
@@ -797,16 +922,33 @@ function kalenderData() {
 
             const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}&date=${dateStr}`;
             window.location.href = url;
-        },
-
+        }
+        ,
         navigateToMonth(year, month, changeToMonthly = true) {
-            // Set view ke monthly jika dari yearly view (changeToMonthly = true)
-            if (changeToMonthly) {
-                localStorage.setItem('kalenderView', 'monthly');
-            }
-            // Navigate dengan reload untuk load data bulan yang baru
-            const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
-            window.location.href = url;
+            // Fetch events untuk bulan yang akan ditampilkan sebelum navigate
+            fetch(`/api/calendar/events?tahun=${year}&bulan=${month}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Merge data baru dengan existing events
+                    window.calendarEvents = {
+                        ...window.calendarEvents,
+                        ...data
+                    };
+
+                    // Set view ke monthly jika dari yearly view (changeToMonthly = true)
+                    if (changeToMonthly) {
+                        localStorage.setItem('kalenderView', 'monthly');
+                    }
+                    // Navigate dengan reload untuk load data bulan yang baru
+                    const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
+                    window.location.href = url;
+                })
+                .catch(error => {
+                    console.error('Error loading events:', error);
+                    // Fallback: navigate without loading events first
+                    const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
+                    window.location.href = url;
+                });
         }
     }
 }
@@ -820,9 +962,35 @@ function miniCalendar() {
         miniMonth: {{ $bulan }},
         calendarDays: [],
         displayMonth: '',
+        isLoading: false,
 
         init() {
             this.generateSimpleCalendar();
+        },
+
+        fetchEventsForMonth(year, month) {
+            // Fetch events dari API untuk bulan tertentu
+            this.isLoading = true;
+
+            fetch(`/api/calendar/events?tahun=${year}&bulan=${month}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Merge data baru dengan existing events
+                    window.calendarEvents = {
+                        ...window.calendarEvents,
+                        ...data
+                    };
+
+                    // Regenerate calendar dengan data baru
+                    this.generateSimpleCalendar();
+                    this.isLoading = false;
+
+                    console.log('Events loaded for', month, '/', year, '- Total events:', Object.keys(window.calendarEvents).length);
+                })
+                .catch(error => {
+                    console.error('Error loading events:', error);
+                    this.isLoading = false;
+                });
         },
 
         prevMonth() {
@@ -831,7 +999,9 @@ function miniCalendar() {
                 this.miniMonth = 12;
                 this.miniYear--;
             }
-            this.generateSimpleCalendar();
+
+            // Fetch events untuk bulan sebelumnya
+            this.fetchEventsForMonth(this.miniYear, this.miniMonth);
         },
 
         nextMonth() {
@@ -840,7 +1010,9 @@ function miniCalendar() {
                 this.miniMonth = 1;
                 this.miniYear++;
             }
-            this.generateSimpleCalendar();
+
+            // Fetch events untuk bulan berikutnya
+            this.fetchEventsForMonth(this.miniYear, this.miniMonth);
         },
 
         changeViewFromSidebar(view) {

@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title') - Aggajinamitto Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="preload" as="image" href="{{ asset('images/agmDigital.webp') }}">
+    <link rel="preload" as="image" href="{{ asset('images/bg.webp') }}">
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     @stack('styles')
     <style>
         * {
-            font-family: 'Outfit', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -35,9 +35,8 @@
         }
     </style>
 </head>
-<body class="overflow-hidden" style="background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('{{ asset('images/bg.jpg') }}') center/cover no-repeat fixed;" x-data="{ sidebarOpen: false }">
+<body class="overflow-hidden" style="background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('{{ asset('images/bg.webp') }}') center/cover no-repeat fixed;" x-data="{ sidebarOpen: false }">
     <div class="flex h-screen">
-        <!-- Mobile sidebar backdrop -->
         <div x-show="sidebarOpen"
              @click="sidebarOpen = false"
              x-transition:enter="transition-opacity ease-linear duration-300"
@@ -50,15 +49,13 @@
              style="display: none;">
         </div>
 
-        <!-- Sidebar -->
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
                class="fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-900/50 backdrop-blur-md border-r border-gray-700/50 transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col shadow-2xl">
 
-            <!-- Logo -->
             <div class="p-6 border-b border-gray-700/50">
                 <div class="flex items-center justify-between">
                     <div class="flex flex-col items-center w-full">
-                        <img src="{{ asset('images/agmDigital.png') }}" alt="Logo" class="w-17 h-16 object-cover mb-3 drop-shadow-2xl">
+                        <img src="{{ asset('images/agmDigital.webp') }}" alt="Logo" class="w-17 h-16 object-cover mb-3 drop-shadow-2xl" loading="eager" decoding="async">
                         <h1 class="text-lg font-bold text-white tracking-tight">Agm Digital</h1>
                     </div>
                     <button @click="sidebarOpen = false" class="lg:hidden text-gray-400 hover:text-white absolute top-6 right-6 transition">
@@ -69,12 +66,9 @@
                 </div>
             </div>
 
-            <!-- Navigation -->
             <nav class="flex-1 mt-4 px-3 space-y-1 overflow-y-auto">
                 <p class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">MENU</p>
 
-
-                {{-- Dashboard --}}
                 <a href="{{ route('dashboard') }}"
                    class="group flex items-center space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('dashboard') ? 'bg-slate-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}"
                    @click="sidebarOpen = false">
@@ -84,8 +78,6 @@
                     <span class="font-medium">Dashboard</span>
                 </a>
 
-
-                {{-- Articles --}}
                 <a href="{{ route('articles.index') }}"
                    class="group flex items-center space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('articles.*') ? 'bg-slate-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}"
                    @click="sidebarOpen = false">
@@ -96,7 +88,6 @@
                     <span class="font-medium">Artikel</span>
                 </a>
 
-                {{-- digital book --}}
                 <div x-data="{ formsOpen: localStorage.getItem('digitalBookOpen') === 'true' }">
                     <button @click.stop="formsOpen = !formsOpen; localStorage.setItem('digitalBookOpen', formsOpen)" class="w-full group flex items-center justify-between space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('dhammavachana.*') || request()->routeIs('ebooks.*') ? ' text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
                         <div class="flex items-center space-x-3">
@@ -130,7 +121,6 @@
                     </div>
                 </div>
 
-                {{-- pali vãcanā --}}
                 <div x-data="{ formsOpen: localStorage.getItem('paliVacanaOpen') === 'true' }">
                     <button @click.stop="formsOpen = !formsOpen; localStorage.setItem('paliVacanaOpen', formsOpen)" class="w-full group flex items-center justify-between space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('pathama-puja.*') || request()->routeIs('puja-pagi.*') ? ' text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
                         <div class="flex items-center space-x-3">
@@ -164,8 +154,6 @@
                     </div>
                 </div>
 
-
-
                 <a href="{{ route('kalender-buddhist.index') }}"
                    class="group flex items-center space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('kalender-buddhist.*') ? 'bg-slate-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}"
                    @click="sidebarOpen = false">
@@ -188,7 +176,6 @@
             </nav>
         </aside>
 
-        <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="bg-gray-900/70 backdrop-blur-md border-b border-gray-700/70 px-6 py-4 shadow-lg relative z-50">
                 <div class="flex items-center justify-between">
@@ -202,7 +189,6 @@
                     </div>
 
                     <div class="flex items-center space-x-3">
-                        <!-- Date Display with Real-time -->
                         <div class="hidden sm:flex items-center space-x-2 px-4 py-2">
                             <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -214,7 +200,7 @@
                         <div x-data="{ userMenuOpen: false }" class="relative">
                             <button @click="userMenuOpen = !userMenuOpen" class="flex items-center space-x-3 px-3 py-2 hover:border-white rounded-xl transition">
                                 @if(Auth::user()->profile_photo)
-                                    <img src="{{ asset('storage/' . Auth::user()->profile_photo) }}?t={{ time() }}" alt="User" class="w-8 h-8 rounded-full object-cover">
+                                    <img src="{{ asset('storage/' . Auth::user()->profile_photo) }}" alt="User" class="w-8 h-8 rounded-full object-cover" loading="lazy">
                                 @else
                                     <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
                                         <span class="text-xs font-bold text-white">{{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</span>
@@ -261,7 +247,6 @@
                 </div>
             </header>
 
-            <!-- Content Area -->
             <main class="flex-1 overflow-y-auto p-6">
                 @yield('content')
             </main>
@@ -269,7 +254,6 @@
     </div>
 
     <script>
-        // Function buat update tanggal secara real-time
         function updateDate() {
             const now = new Date();
             const options = { day: '2-digit', month: 'short', year: 'numeric' };
@@ -278,7 +262,6 @@
         }
 
         updateDate();
-        setInterval(updateDate, 1000);
     </script>
     @stack('scripts')
 </body>

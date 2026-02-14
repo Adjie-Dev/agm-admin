@@ -4,80 +4,61 @@ namespace App\Http\Controllers;
 
 use App\Models\Ebook;
 use App\Models\Dhammavachana;
+use App\Models\Article;
 use App\Models\AcaraBuddhist;
-use App\Models\FaseBulan;
-use App\Models\Article; // ⭐ TAMBAHKAN INI - Sesuai model Article
-use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // ⭐ STATISTIK - TAMBAHKAN ARTIKEL
+        // Ambil tahun dan bulan dari request, default ke sekarang
+        $tahun = $request->get('tahun', now()->year);
+        $bulan = $request->get('bulan', now()->month);
+
+        // Buat tanggal pertama di bulan ini
+        $tanggalPertama = Carbon::create($tahun, $bulan, 1);
+
+        // Hitung total data
         $totalEbooks = Ebook::count();
         $totalDhammavachana = Dhammavachana::count();
+        $totalArticles = Article::count();
         $totalAcara = AcaraBuddhist::count();
-        $totalArticles = Article::count(); // ⭐ TAMBAHKAN INI
 
-        // ⭐ AMBIL 5 ARTIKEL TERBARU
+        // Ambil acara di bulan ini untuk kalender - FORMAT KEYBY BERDASARKAN TANGGAL
+        $acaraBuddhist = AcaraBuddhist::select('tanggal', 'nama', 'nama_acara', 'deskripsi', 'warna', 'waktu_mulai', 'waktu_selesai')
+            ->whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', $bulan)
+            ->get()
+            ->keyBy(function($item) {
+                return $item->tanggal instanceof \Carbon\Carbon
+                    ? $item->tanggal->format('Y-m-d')
+                    : (string)$item->tanggal;
+            });
+
+        // Ambil artikel terbaru (opsional, jika diperlukan)
         $recentArticles = Article::orderBy('created_at', 'desc')
             ->limit(5)
-            ->get();
+            ->get(['id', 'title', 'slug', 'created_at']);
 
-        // Kalender
-        $tahun = $request->input('tahun', now()->year);
-        $bulan = $request->input('bulan', now()->month);
-
-        $tanggalPertama = Carbon::createFromDate($tahun, $bulan, 1);
-
-        // Ambil fase bulan untuk bulan ini
-        $faseBulan = FaseBulan::whereBetween('tanggal', [
-            $tanggalPertama->copy()->startOfMonth(),
-            $tanggalPertama->copy()->endOfMonth()
-        ])->get()->keyBy(function($item) {
-            return $item->tanggal->format('Y-m-d');
-        });
-
-        // Ambil acara Buddhist untuk bulan ini
-        $acaraBuddhist = AcaraBuddhist::whereBetween('tanggal', [
-            $tanggalPertama->copy()->startOfMonth(),
-            $tanggalPertama->copy()->endOfMonth()
-        ])->get()->keyBy(function($item) {
-            return $item->tanggal->format('Y-m-d');
-        });
-
-        // Aturan Uposatha
-        $aturanUposatha = collect([
-            'bulan_baru' => (object)[
-                'nama_acara' => 'Uposatha',
-                'warna' => '#06b6d4'
-            ],
-            'purnama' => (object)[
-                'nama_acara' => 'Uposatha',
-                'warna' => '#06b6d4'
-            ]
-        ]);
-
-        // Acara mendatang (3 acara terdekat)
-        $acaraMendatang = AcaraBuddhist::where('tanggal', '>=', now())
+        // Ambil acara mendatang (opsional, jika diperlukan)
+        $upcomingEvents = AcaraBuddhist::where('tanggal', '>=', now())
             ->orderBy('tanggal', 'asc')
             ->limit(3)
-            ->get();
+            ->get(['id', 'nama_acara', 'tanggal', 'warna']);
 
         return view('dashboard', compact(
             'totalEbooks',
             'totalDhammavachana',
-            'totalAcara',
             'totalArticles',
-            'recentArticles',
+            'totalAcara',
             'tahun',
             'bulan',
             'tanggalPertama',
-            'faseBulan',
             'acaraBuddhist',
-            'aturanUposatha',
-            'acaraMendatang'
+            'recentArticles',
+            'upcomingEvents'
         ));
     }
 }

@@ -5,6 +5,15 @@
 @section('header', 'Tambah Acara Buddhist')
 
 @section('content')
+<style>
+    /* Ganti warna ikon date dan time picker */
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        cursor: pointer;
+    }
+</style>
+
 <div class="max-w-3xl mx-auto">
     <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 shadow-xl">
         <form action="{{ route('kalender-buddhist.store') }}" method="POST">
@@ -15,7 +24,7 @@
                 <label class="block text-sm font-semibold text-gray-300 mb-2">Tipe Acara</label>
                 <div class="relative">
                     <select name="tipe_acara" id="tipe_acara" required
-                            class="w-full px-4 py-3 pr-10 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition appearance-none">
+                            class="w-full px-4 py-3 pr-12 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition appearance-none">
                         <option value="">Pilih Tipe Acara</option>
                         <option value="waisak">Hari Raya Waisak</option>
                         <option value="magha_puja">Magha Puja</option>
@@ -26,9 +35,9 @@
                         <option value="pavarana">Pavarana</option>
                         <option value="custom">Khusus</option>
                     </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7-7-7-7"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </div>
                 </div>
@@ -62,7 +71,7 @@
             <!-- Tanggal -->
             <div class="mb-6">
                 <label class="block text-sm font-semibold text-gray-300 mb-2">Tanggal</label>
-                <input type="date" name="tanggal" value="{{ old('tanggal') }}" required
+                <input type="date" name="tanggal" value="{{ old('tanggal', $defaultTanggal ?? '') }}" required
                        class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                 @error('tanggal')
                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
@@ -132,7 +141,7 @@
 </div>
 
 <script>
-    const DEVELOPER_OPACITY = 0.2; // Range: 0.0 - 1.0 (0.2 = 20% opacity)
+    const DEVELOPER_OPACITY = 0.2;
 
     function hexToRgba(hex, opacity) {
         hex = hex.replace('#', '');
@@ -162,10 +171,21 @@
         'custom': '#6366f1'
     };
 
+    const namaAcara = {
+        'waisak': 'Hari Raya Waisak',
+        'magha_puja': 'Magha Puja',
+        'asadha_puja': 'Asadha Puja',
+        'kathina': 'Kathina',
+        'vassa_mulai': 'Awal Vassa',
+        'vassa_selesai': 'Akhir Vassa',
+        'pavarana': 'Pavarana'
+    };
+
     const tipeAcaraSelect = document.getElementById('tipe_acara');
     const warnaInput = document.getElementById('warna_input');
     const warnaHidden = document.getElementById('warna_hidden');
     const warnaInfo = document.getElementById('warna_info');
+    const namaInput = document.querySelector('input[name="nama"]');
 
     function updateWarna() {
         const currentHex = warnaInput.value;
@@ -179,15 +199,29 @@
             warnaInput.value = '#6366f1';
             warnaInput.disabled = true;
             warnaInfo.textContent = 'Pilih tipe acara untuk menentukan warna';
+
+            namaInput.value = '';
+            namaInput.readOnly = false;
+            namaInput.placeholder = 'Contoh: Hari Raya Waisak 2026';
+
         } else if (tipeAcara === 'custom') {
             warnaInput.value = '#6366f1';
             warnaInput.disabled = false;
             warnaInfo.textContent = 'Pilih warna custom untuk acara khusus';
+
+            namaInput.value = '';
+            namaInput.readOnly = false;
+            namaInput.placeholder = 'Masukkan nama acara khusus';
+
         } else {
             warnaInput.value = warnaAcara[tipeAcara];
             warnaInput.disabled = true;
             warnaInfo.textContent = 'Warna otomatis berdasarkan tipe acara';
+
+            namaInput.value = namaAcara[tipeAcara];
+            namaInput.readOnly = true;
         }
+
         updateWarna();
     });
 

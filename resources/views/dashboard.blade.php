@@ -95,7 +95,7 @@
 
     <!-- Grid 2 Kolom: Kalender & Acara -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Kalender Buddhist - Kiri (1/3) dengan Alpine.js -->
+        <!-- Kalender Buddhist - Kiri (1/3) -->
         <div class="lg:col-span-1">
             <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 border border-slate-700/50 shadow-xl sticky top-6" x-data="dashboardMiniCalendar()">
                 <div class="flex items-center justify-between mb-4">
@@ -118,25 +118,17 @@
 
                 <p class="text-sm text-gray-400 mb-4" x-text="displayMonth">{{ $tanggalPertama->locale('id')->isoFormat('MMMM YYYY') }}</p>
 
-                <!-- Mini Legend -->
-                <div class="grid grid-cols-2 gap-2 mb-4">
-                    <div class="flex items-center space-x-1.5">
-                        <div class="w-2 h-2 rounded-full bg-cyan-500"></div>
-                        <span class="text-[10px] text-gray-300">Uposatha</span>
+                <!-- Legend Acara Bulan Ini -->
+                @if($acaraBuddhist->count() > 0)
+                <div class="grid grid-cols-2 gap-x-3 gap-y-2 mb-4 max-h-48 overflow-y-auto">
+                    @foreach($acaraBuddhist as $acara)
+                    <div class="flex items-center space-x-2 min-w-0">
+                        <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: {{ $acara->warna }}"></div>
+                        <span class="text-[11px] text-gray-300 truncate">{{ $acara->nama ?? $acara->nama_acara }}</span>
                     </div>
-                    <div class="flex items-center space-x-1.5">
-                        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
-                        <span class="text-[10px] text-gray-300">Waisak</span>
-                    </div>
-                    <div class="flex items-center space-x-1.5">
-                        <div class="w-2 h-2 rounded-full bg-purple-500"></div>
-                        <span class="text-[10px] text-gray-300">Magha Puja</span>
-                    </div>
-                    <div class="flex items-center space-x-1.5">
-                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-                        <span class="text-[10px] text-gray-300">Asalha Puja</span>
-                    </div>
+                    @endforeach
                 </div>
+                @endif
 
                 <!-- Mini Calendar -->
                 <div>
@@ -162,7 +154,7 @@
 
                                 <template x-if="day.hasEvent">
                                     <div class="absolute inset-0 rounded-[inherit]"
-                                         :style="'background-color: ' + day.color + '; opacity: 0.6;'">
+                                         :style="'background-color: ' + day.color">
                                     </div>
                                 </template>
 
@@ -271,6 +263,9 @@
 </div>
 
 <script>
+// Inject data acara dari PHP ke JavaScript
+window.calendarEvents = @json($acaraBuddhist);
+
 // Alpine.js Component untuk Mini Calendar di Dashboard
 function dashboardMiniCalendar() {
     return {
@@ -289,7 +284,8 @@ function dashboardMiniCalendar() {
                 this.miniMonth = 12;
                 this.miniYear--;
             }
-            this.generateCalendar();
+            // Reload page dengan parameter tahun dan bulan baru
+            window.location.href = `{{ route('dashboard') }}?tahun=${this.miniYear}&bulan=${this.miniMonth}`;
         },
 
         nextMonth() {
@@ -298,23 +294,22 @@ function dashboardMiniCalendar() {
                 this.miniMonth = 1;
                 this.miniYear++;
             }
-            this.generateCalendar();
+            // Reload page dengan parameter tahun dan bulan baru
+            window.location.href = `{{ route('dashboard') }}?tahun=${this.miniYear}&bulan=${this.miniMonth}`;
         },
 
-        async generateCalendar() {
-            // Update display month
+        generateCalendar() {
             const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
                                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
             this.displayMonth = `${monthNames[this.miniMonth - 1]} ${this.miniYear}`;
 
             const firstDay = new Date(this.miniYear, this.miniMonth - 1, 1);
             const lastDay = new Date(this.miniYear, this.miniMonth, 0);
-
-            // Get day of week (0 = Sunday, 1 = Monday, etc.) - keep Sunday as 0
             let dayOfWeek = firstDay.getDay();
 
             const daysInMonth = lastDay.getDate();
-            const today = new Date();
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
             this.calendarDays = [];
 
@@ -324,50 +319,67 @@ function dashboardMiniCalendar() {
                 const day = prevMonthLastDay - i;
                 const prevMonth = this.miniMonth === 1 ? 12 : this.miniMonth - 1;
                 const prevYear = this.miniMonth === 1 ? this.miniYear - 1 : this.miniYear;
+                const dateStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                let event = null;
+                if (window.calendarEvents && typeof window.calendarEvents === 'object') {
+                    event = window.calendarEvents[dateStr] || null;
+                }
 
                 this.calendarDays.push({
                     day: day,
-                    date: `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    date: dateStr,
                     fullDate: new Date(prevYear, prevMonth - 1, day),
                     isCurrentMonth: false,
-                    isToday: false,
-                    hasEvent: false,
-                    color: ''
+                    isToday: dateStr === todayStr,
+                    hasEvent: !!event,
+                    color: event ? event.warna : ''
                 });
             }
 
             // Current month days
             for (let day = 1; day <= daysInMonth; day++) {
                 const currentDate = new Date(this.miniYear, this.miniMonth - 1, day);
-                const isToday = currentDate.toDateString() === today.toDateString();
+                const dateStr = `${this.miniYear}-${String(this.miniMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                let event = null;
+                if (window.calendarEvents && typeof window.calendarEvents === 'object') {
+                    event = window.calendarEvents[dateStr] || null;
+                }
 
                 this.calendarDays.push({
                     day: day,
-                    date: `${this.miniYear}-${String(this.miniMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    date: dateStr,
                     fullDate: currentDate,
                     isCurrentMonth: true,
-                    isToday: isToday,
-                    hasEvent: false,
-                    color: ''
+                    isToday: dateStr === todayStr,
+                    hasEvent: !!event,
+                    color: event ? event.warna : ''
                 });
             }
 
-            // Next month days to fill the grid
+            // Next month days
             const totalCells = Math.ceil(this.calendarDays.length / 7) * 7;
             const remainingCells = totalCells - this.calendarDays.length;
 
             for (let day = 1; day <= remainingCells; day++) {
                 const nextMonth = this.miniMonth === 12 ? 1 : this.miniMonth + 1;
                 const nextYear = this.miniMonth === 12 ? this.miniYear + 1 : this.miniYear;
+                const dateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                let event = null;
+                if (window.calendarEvents && typeof window.calendarEvents === 'object') {
+                    event = window.calendarEvents[dateStr] || null;
+                }
 
                 this.calendarDays.push({
                     day: day,
-                    date: `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    date: dateStr,
                     fullDate: new Date(nextYear, nextMonth - 1, day),
                     isCurrentMonth: false,
-                    isToday: false,
-                    hasEvent: false,
-                    color: ''
+                    isToday: dateStr === todayStr,
+                    hasEvent: !!event,
+                    color: event ? event.warna : ''
                 });
             }
         },
