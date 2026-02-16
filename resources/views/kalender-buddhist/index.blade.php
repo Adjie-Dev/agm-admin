@@ -234,7 +234,7 @@
                 </div>
 
                 <!-- MONTHLY VIEW -->
-                <div x-show="currentView === 'monthly'" x-transition>
+                <div x-show="currentView === 'monthly'" x-transition x-data="monthlyViewData()" x-init="initMonthly()">
                     <div class="grid grid-cols-7 gap-3">
                         @php
                             $tanggalSekarang = $tanggalPertama->copy()->startOfWeek(Carbon\Carbon::MONDAY);
@@ -245,11 +245,11 @@
                             @php
                                 $tanggalStr = $tanggalSekarang->format('Y-m-d');
                                 $adaDiBulanIni = $tanggalSekarang->month == $bulan;
-                                $hariIni = $tanggalSekarang->isToday();
                                 $acaraHariIni = $acaraBuddhist->get($tanggalStr);
                             @endphp
 
-                            <div class="min-h-[140px] rounded-xl border {{ $hariIni ? 'ring-2 ring-indigo-500/70' : '' }} overflow-hidden {{ $adaDiBulanIni ? 'border-slate-600/50' : 'border-slate-800/50' }}">
+                            <div class="min-h-[140px] rounded-xl border overflow-hidden {{ $adaDiBulanIni ? 'border-slate-600/50' : 'border-slate-800/50' }}"
+                                 :class="isToday('{{ $tanggalStr }}') ? 'ring-2 ring-indigo-500/70' : ''">
                                 @if($acaraHariIni)
                                     <div class="h-full flex flex-col cursor-pointer hover:scale-105 transition-transform"
                                          style="background-color: {{ $acaraHariIni->warna }};">
@@ -289,7 +289,7 @@
                 </div>
 
                 <!-- YEARLY VIEW - Google Calendar Style -->
-                <div x-show="currentView === 'yearly'" x-transition>
+                <div x-show="currentView === 'yearly'" x-transition x-data="yearlyViewData()" x-init="initYearly()">
                     <div class="grid grid-cols-4 gap-4">
                         @for($m = 1; $m <= 12; $m++)
                             @php
@@ -328,21 +328,21 @@
                                             $dateStr = $currentDate->format('Y-m-d');
                                             $acaraCheck = $acaraBuddhistYear->get($dateStr);
                                             $hasEvent = $acaraCheck;
-                                            $isToday = $currentDate->isToday();
                                         @endphp
 
-                                        <div class="aspect-square flex items-center justify-center">
+                                        <div class="aspect-square flex items-center justify-center"
+                                             x-data="{ dateStr: '{{ $dateStr }}' }">
                                             @if($hasEvent)
                                                 <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                                                     style="background-color: {{ $acaraCheck->warna }};">
-                                                    {{ $day }}
-                                                </div>
-                                            @elseif($isToday)
-                                                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-indigo-500/70 text-indigo-400">
+                                                     style="background-color: {{ $acaraCheck->warna }};"
+                                                     :class="isToday(dateStr) ? 'ring-2 ring-white' : ''">
                                                     {{ $day }}
                                                 </div>
                                             @else
-                                                <span class="text-[10px] font-semibold text-gray-400">{{ $day }}</span>
+                                                <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                                                     :class="isToday(dateStr) ? 'border-2 border-indigo-500/70 text-indigo-400' : 'text-gray-400'">
+                                                    {{ $day }}
+                                                </div>
                                             @endif
                                         </div>
                                     @endfor
@@ -506,8 +506,20 @@
 @endif
 
 <script>
+// GLOBAL HELPER: Real-time today checker
+window.getTodayString = function() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+window.isToday = function(dateStr) {
+    return dateStr === window.getTodayString();
+};
+
 // Data events dari PHP - inject ke JavaScript
-// Merge events untuk bulan ini dengan semua events tahun ini (jika ada)
 window.calendarEvents = {
     ...@json($acaraBuddhistYear ?? []),
     ...@json($acaraBuddhist)
@@ -515,182 +527,59 @@ window.calendarEvents = {
 window.faseBulanData = @json($faseBulan);
 window.aturanUposathaData = @json($aturanUposatha);
 
-// Fungsi untuk daily event display - FIXED VERSION
-function dailyEventDisplay() {
+// Fungsi untuk monthly view data - DENGAN REAL-TIME TODAY DETECTION
+function monthlyViewData() {
     return {
-        events: {},
-        currentEvent: null,
+        todayStr: '',
 
-        loadEvents() {
-            // Ambil data dari data attribute
-            const eventsData = this.$el.getAttribute('data-events');
-            if (eventsData) {
-                try {
-                    this.events = JSON.parse(eventsData);
-                } catch (e) {
-                    console.error('Failed to parse events:', e);
-                    this.events = {};
-                }
-            }
-
-            // Update event immediately
-            this.updateEvent();
-
-            // Watch untuk perubahan currentDate di parent
-            this.$watch('$root.currentDate', () => {
-                this.updateEvent();
-            });
+        initMonthly() {
+            this.updateTodayStr();
+            // Update setiap menit untuk deteksi pergantian hari
+            setInterval(() => {
+                this.updateTodayStr();
+            }, 60000); // Check every minute
         },
 
-        updateEvent() {
-            // PERBAIKAN UTAMA: Ambil tanggal dari URL parameter terlebih dahulu
-            const urlParams = new URLSearchParams(window.location.search);
-            const dateParam = urlParams.get('date');
-
-            let dateStr;
-
-            if (dateParam) {
-                // Gunakan tanggal dari URL (ini yang dipencet dari mini calendar)
-                dateStr = dateParam;
-            } else {
-                // Fallback ke currentDate dari root component atau hari ini
-                const currentDate = this.$root.currentDate;
-
-                if (!currentDate) {
-                    const now = new Date();
-                    const year = now.getFullYear();
-                    const month = String(now.getMonth() + 1).padStart(2, '0');
-                    const day = String(now.getDate()).padStart(2, '0');
-                    dateStr = `${year}-${month}-${day}`;
-                } else {
-                    const year = currentDate.getFullYear();
-                    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-                    const day = String(currentDate.getDate()).padStart(2, '0');
-                    dateStr = `${year}-${month}-${day}`;
-                }
-            }
-
-            // Set current event berdasarkan dateStr yang sudah benar
-            this.currentEvent = this.events[dateStr] || null;
-
-            console.log('Date from URL:', dateParam);
-            console.log('Using date:', dateStr);
-            console.log('Current event:', this.currentEvent);
+        updateTodayStr() {
+            this.todayStr = window.getTodayString();
         },
 
-        getEventPosition(event) {
-            if (!event || !event.waktu_mulai) return 24;
-            const parts = event.waktu_mulai.split(':');
-            const hour = parseInt(parts[0]);
-            const minute = parseInt(parts[1]);
-            return (hour * 48) + (minute * 0.8);
+        isToday(dateStr) {
+            return dateStr === this.todayStr;
         }
     }
 }
 
-// Fungsi untuk week header data
-function weekHeaderData() {
-    return {
-        weekDates: [],
-
-        generateWeekDates() {
-            const today = new Date();
-            const dayOfWeek = today.getDay();
-            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-            const monday = new Date(today);
-            monday.setDate(today.getDate() + mondayOffset);
-
-            const dayNames = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU', 'MINGGU'];
-
-            this.weekDates = [];
-
-            for (let i = 0; i < 7; i++) {
-                const currentDate = new Date(monday);
-                currentDate.setDate(monday.getDate() + i);
-                const isToday = currentDate.toDateString() === today.toDateString();
-
-                this.weekDates.push({
-                    date: currentDate.getDate(),
-                    name: dayNames[i],
-                    fullDate: currentDate,
-                    isToday: isToday
-                });
-            }
-        },
-
-        navigateToDate(date) {
-            // Emit event untuk update main calendar tanpa reload
-            window.dispatchEvent(new CustomEvent('navigate-to-date', {
-                detail: { date: date }
-            }));
-        }
-    }
-}
-
-// Fungsi untuk weekly view data
-function weeklyViewData() {
-    return {
-        weekDays: [],
-
-        initWeekly() {
-            this.generateWeekDays();
-        },
-
-        generateWeekDays() {
-            const today = new Date();
-            const dayOfWeek = today.getDay();
-            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-            const monday = new Date(today);
-            monday.setDate(today.getDate() + mondayOffset);
-
-            const dayNamesShort = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-
-            this.weekDays = [];
-
-            for (let i = 0; i < 7; i++) {
-                const currentDate = new Date(monday);
-                currentDate.setDate(monday.getDate() + i);
-                const isToday = currentDate.toDateString() === today.toDateString();
-
-                const year = currentDate.getFullYear();
-                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-                const day = String(currentDate.getDate()).padStart(2, '0');
-                const dateStr = `${year}-${month}-${day}`;
-
-                // Cek apakah ada event di tanggal ini
-                const event = window.calendarEvents[dateStr] || null;
-
-                this.weekDays.push({
-                    day: currentDate.getDate(),
-                    dayName: dayNamesShort[i],
-                    fullDate: currentDate,
-                    dateStr: dateStr,
-                    isToday: isToday,
-                    event: event
-                });
-            }
-        },
-
-        getEventPosition(event) {
-            if (!event || !event.waktu_mulai) return 24;
-            const parts = event.waktu_mulai.split(':');
-            const hour = parseInt(parts[0]);
-            const minute = parseInt(parts[1]);
-            return (hour * 48) + (minute * 0.8);
-        }
-    }
-}
-
-// Fungsi untuk yearly view data
+// Fungsi untuk yearly view data - DENGAN REAL-TIME TODAY DETECTION
 function yearlyViewData() {
     return {
         monthNames: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
                      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
         months: [],
         currentYear: {{ $tahun }},
+        todayStr: '',
 
-        init() {
+        initYearly() {
+            this.updateTodayStr();
             this.generateYearlyData();
+
+            // Update setiap menit untuk deteksi pergantian hari
+            setInterval(() => {
+                const oldToday = this.todayStr;
+                this.updateTodayStr();
+                if (oldToday !== this.todayStr) {
+                    // Hari berganti, refresh yearly data
+                    this.generateYearlyData();
+                }
+            }, 60000);
+        },
+
+        updateTodayStr() {
+            this.todayStr = window.getTodayString();
+        },
+
+        isToday(dateStr) {
+            return dateStr === this.todayStr;
         },
 
         generateYearlyData() {
@@ -702,9 +591,6 @@ function yearlyViewData() {
                 const daysInMonth = monthEnd.getDate();
                 const firstDayOfWeek = monthStart.getDay();
                 const startDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-
-                const now = new Date();
-                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
                 const days = [];
 
@@ -725,13 +611,12 @@ function yearlyViewData() {
                     const currentDate = new Date(this.currentYear, m - 1, day);
                     const dateStr = `${this.currentYear}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const event = window.calendarEvents[dateStr] || null;
-                    const isToday = dateStr === todayStr;
 
                     days.push({
                         dayNumber: day,
                         date: dateStr,
                         hasEvent: !!event,
-                        isToday: isToday,
+                        isToday: this.isToday(dateStr),
                         inMonth: true,
                         color: event ? event.warna : ''
                     });
@@ -756,35 +641,212 @@ function yearlyViewData() {
                     days: days
                 });
             }
-
-            console.log('Yearly view data generated for year', this.currentYear);
         },
 
         navigateToMonth(year, month, changeToMonthly = true) {
-            // Fetch events untuk bulan yang akan ditampilkan sebelum navigate
             fetch(`/api/calendar/events?tahun=${year}&bulan=${month}`)
                 .then(response => response.json())
                 .then(data => {
-                    // Merge data baru dengan existing events
                     window.calendarEvents = {
                         ...window.calendarEvents,
                         ...data
                     };
 
-                    // Set view ke monthly jika dari yearly view (changeToMonthly = true)
                     if (changeToMonthly) {
                         localStorage.setItem('kalenderView', 'monthly');
                     }
-                    // Navigate dengan reload untuk load data bulan yang baru
                     const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
                     window.location.href = url;
                 })
                 .catch(error => {
                     console.error('Error loading events:', error);
-                    // Fallback: navigate without loading events first
                     const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
                     window.location.href = url;
                 });
+        }
+    }
+}
+
+// Fungsi untuk daily event display
+function dailyEventDisplay() {
+    return {
+        events: {},
+        currentEvent: null,
+
+        loadEvents() {
+            const eventsData = this.$el.getAttribute('data-events');
+            if (eventsData) {
+                try {
+                    this.events = JSON.parse(eventsData);
+                } catch (e) {
+                    console.error('Failed to parse events:', e);
+                    this.events = {};
+                }
+            }
+
+            this.updateEvent();
+
+            this.$watch('$root.currentDate', () => {
+                this.updateEvent();
+            });
+        },
+
+        updateEvent() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dateParam = urlParams.get('date');
+
+            let dateStr;
+
+            if (dateParam) {
+                dateStr = dateParam;
+            } else {
+                const currentDate = this.$root.currentDate;
+
+                if (!currentDate) {
+                    dateStr = window.getTodayString();
+                } else {
+                    const year = currentDate.getFullYear();
+                    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(currentDate.getDate()).padStart(2, '0');
+                    dateStr = `${year}-${month}-${day}`;
+                }
+            }
+
+            this.currentEvent = this.events[dateStr] || null;
+        },
+
+        getEventPosition(event) {
+            if (!event || !event.waktu_mulai) return 24;
+            const parts = event.waktu_mulai.split(':');
+            const hour = parseInt(parts[0]);
+            const minute = parseInt(parts[1]);
+            return (hour * 48) + (minute * 0.8);
+        }
+    }
+}
+
+// Fungsi untuk week header data - DENGAN REAL-TIME TODAY DETECTION
+function weekHeaderData() {
+    return {
+        weekDates: [],
+        todayStr: '',
+
+        generateWeekDates() {
+            this.updateTodayStr();
+
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + mondayOffset);
+
+            const dayNames = ['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU', 'MINGGU'];
+
+            this.weekDates = [];
+
+            for (let i = 0; i < 7; i++) {
+                const currentDate = new Date(monday);
+                currentDate.setDate(monday.getDate() + i);
+
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+
+                this.weekDates.push({
+                    date: currentDate.getDate(),
+                    name: dayNames[i],
+                    fullDate: currentDate,
+                    isToday: dateStr === this.todayStr
+                });
+            }
+
+            // Update setiap menit untuk deteksi pergantian hari
+            setInterval(() => {
+                const oldToday = this.todayStr;
+                this.updateTodayStr();
+                if (oldToday !== this.todayStr) {
+                    this.generateWeekDates();
+                }
+            }, 60000);
+        },
+
+        updateTodayStr() {
+            this.todayStr = window.getTodayString();
+        },
+
+        navigateToDate(date) {
+            window.dispatchEvent(new CustomEvent('navigate-to-date', {
+                detail: { date: date }
+            }));
+        }
+    }
+}
+
+// Fungsi untuk weekly view data - DENGAN REAL-TIME TODAY DETECTION
+function weeklyViewData() {
+    return {
+        weekDays: [],
+        todayStr: '',
+
+        initWeekly() {
+            this.generateWeekDays();
+        },
+
+        generateWeekDays() {
+            this.updateTodayStr();
+
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + mondayOffset);
+
+            const dayNamesShort = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+            this.weekDays = [];
+
+            for (let i = 0; i < 7; i++) {
+                const currentDate = new Date(monday);
+                currentDate.setDate(monday.getDate() + i);
+
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+
+                const event = window.calendarEvents[dateStr] || null;
+
+                this.weekDays.push({
+                    day: currentDate.getDate(),
+                    dayName: dayNamesShort[i],
+                    fullDate: currentDate,
+                    dateStr: dateStr,
+                    isToday: dateStr === this.todayStr,
+                    event: event
+                });
+            }
+
+            // Update setiap menit untuk deteksi pergantian hari
+            setInterval(() => {
+                const oldToday = this.todayStr;
+                this.updateTodayStr();
+                if (oldToday !== this.todayStr) {
+                    this.generateWeekDays();
+                }
+            }, 60000);
+        },
+
+        updateTodayStr() {
+            this.todayStr = window.getTodayString();
+        },
+
+        getEventPosition(event) {
+            if (!event || !event.waktu_mulai) return 24;
+            const parts = event.waktu_mulai.split(':');
+            const hour = parseInt(parts[0]);
+            const minute = parseInt(parts[1]);
+            return (hour * 48) + (minute * 0.8);
         }
     }
 }
@@ -795,7 +857,7 @@ function kalenderData() {
         currentYear: {{ $tahun }},
         currentMonth: {{ $bulan }},
         currentView: 'monthly',
-        currentDate: null, // untuk tracking tanggal di daily view
+        currentDate: null,
 
         init() {
             const savedView = localStorage.getItem('kalenderView');
@@ -803,17 +865,14 @@ function kalenderData() {
                 this.currentView = savedView;
             }
 
-            // PERBAIKAN: Initialize currentDate dari URL parameter
             const urlParams = new URLSearchParams(window.location.search);
             const dateParam = urlParams.get('date');
             if (dateParam) {
                 this.currentDate = new Date(dateParam);
             } else {
-                // Default ke hari ini
                 this.currentDate = new Date();
             }
 
-            // Listen untuk date changes dari mini calendar
             window.addEventListener('date-changed', (e) => {
                 this.currentDate = e.detail.date;
             });
@@ -826,11 +885,7 @@ function kalenderData() {
 
         getCurrentDateString() {
             if (!this.currentDate) {
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
+                return window.getTodayString();
             }
             const year = this.currentDate.getFullYear();
             const month = String(this.currentDate.getMonth() + 1).padStart(2, '0');
@@ -922,30 +977,25 @@ function kalenderData() {
 
             const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}&date=${dateStr}`;
             window.location.href = url;
-        }
-        ,
+        },
+
         navigateToMonth(year, month, changeToMonthly = true) {
-            // Fetch events untuk bulan yang akan ditampilkan sebelum navigate
             fetch(`/api/calendar/events?tahun=${year}&bulan=${month}`)
                 .then(response => response.json())
                 .then(data => {
-                    // Merge data baru dengan existing events
                     window.calendarEvents = {
                         ...window.calendarEvents,
                         ...data
                     };
 
-                    // Set view ke monthly jika dari yearly view (changeToMonthly = true)
                     if (changeToMonthly) {
                         localStorage.setItem('kalenderView', 'monthly');
                     }
-                    // Navigate dengan reload untuk load data bulan yang baru
                     const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
                     window.location.href = url;
                 })
                 .catch(error => {
                     console.error('Error loading events:', error);
-                    // Fallback: navigate without loading events first
                     const url = `{{ route('kalender-buddhist.index') }}?tahun=${year}&bulan=${month}`;
                     window.location.href = url;
                 });
@@ -953,9 +1003,7 @@ function kalenderData() {
     }
 }
 
-// ============================================================================
-// HANYA BAGIAN INI YANG DIUBAH - MINI CALENDAR DENGAN HIGHLIGHT EVENT
-// ============================================================================
+// Mini Calendar - SUDAH BENAR dengan real-time detection
 function miniCalendar() {
     return {
         miniYear: {{ $tahun }},
@@ -963,29 +1011,40 @@ function miniCalendar() {
         calendarDays: [],
         displayMonth: '',
         isLoading: false,
+        todayStr: '',
 
         init() {
+            this.updateTodayStr();
             this.generateSimpleCalendar();
+
+            // Update setiap menit untuk deteksi pergantian hari
+            setInterval(() => {
+                const oldToday = this.todayStr;
+                this.updateTodayStr();
+                if (oldToday !== this.todayStr) {
+                    // Hari berganti, refresh calendar
+                    this.generateSimpleCalendar();
+                }
+            }, 60000);
+        },
+
+        updateTodayStr() {
+            this.todayStr = window.getTodayString();
         },
 
         fetchEventsForMonth(year, month) {
-            // Fetch events dari API untuk bulan tertentu
             this.isLoading = true;
 
             fetch(`/api/calendar/events?tahun=${year}&bulan=${month}`)
                 .then(response => response.json())
                 .then(data => {
-                    // Merge data baru dengan existing events
                     window.calendarEvents = {
                         ...window.calendarEvents,
                         ...data
                     };
 
-                    // Regenerate calendar dengan data baru
                     this.generateSimpleCalendar();
                     this.isLoading = false;
-
-                    console.log('Events loaded for', month, '/', year, '- Total events:', Object.keys(window.calendarEvents).length);
                 })
                 .catch(error => {
                     console.error('Error loading events:', error);
@@ -1000,7 +1059,6 @@ function miniCalendar() {
                 this.miniYear--;
             }
 
-            // Fetch events untuk bulan sebelumnya
             this.fetchEventsForMonth(this.miniYear, this.miniMonth);
         },
 
@@ -1011,7 +1069,6 @@ function miniCalendar() {
                 this.miniYear++;
             }
 
-            // Fetch events untuk bulan berikutnya
             this.fetchEventsForMonth(this.miniYear, this.miniMonth);
         },
 
@@ -1031,10 +1088,6 @@ function miniCalendar() {
 
             const daysInMonth = lastDay.getDate();
 
-            // PERBAIKAN: Gunakan waktu real-time untuk deteksi hari ini
-            const now = new Date();
-            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
             this.calendarDays = [];
 
             // Previous month days
@@ -1045,7 +1098,6 @@ function miniCalendar() {
                 const prevYear = this.miniMonth === 1 ? this.miniYear - 1 : this.miniYear;
                 const dateStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-                // PERBAIKAN: Cek apakah ada event di tanggal ini
                 let event = null;
                 if (window.calendarEvents && typeof window.calendarEvents === 'object') {
                     event = window.calendarEvents[dateStr] || null;
@@ -1056,7 +1108,7 @@ function miniCalendar() {
                     date: dateStr,
                     fullDate: new Date(prevYear, prevMonth - 1, day),
                     isCurrentMonth: false,
-                    isToday: dateStr === todayStr,
+                    isToday: dateStr === this.todayStr,
                     hasEvent: !!event,
                     color: event ? event.warna : ''
                 });
@@ -1067,7 +1119,6 @@ function miniCalendar() {
                 const currentDate = new Date(this.miniYear, this.miniMonth - 1, day);
                 const dateStr = `${this.miniYear}-${String(this.miniMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-                // PERBAIKAN: Cek apakah ada event di tanggal ini
                 let event = null;
                 if (window.calendarEvents && typeof window.calendarEvents === 'object') {
                     event = window.calendarEvents[dateStr] || null;
@@ -1078,7 +1129,7 @@ function miniCalendar() {
                     date: dateStr,
                     fullDate: currentDate,
                     isCurrentMonth: true,
-                    isToday: dateStr === todayStr,
+                    isToday: dateStr === this.todayStr,
                     hasEvent: !!event,
                     color: event ? event.warna : ''
                 });
@@ -1093,7 +1144,6 @@ function miniCalendar() {
                 const nextYear = this.miniMonth === 12 ? this.miniYear + 1 : this.miniYear;
                 const dateStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-                // PERBAIKAN: Cek apakah ada event di tanggal ini
                 let event = null;
                 if (window.calendarEvents && typeof window.calendarEvents === 'object') {
                     event = window.calendarEvents[dateStr] || null;
@@ -1104,13 +1154,11 @@ function miniCalendar() {
                     date: dateStr,
                     fullDate: new Date(nextYear, nextMonth - 1, day),
                     isCurrentMonth: false,
-                    isToday: dateStr === todayStr,
+                    isToday: dateStr === this.todayStr,
                     hasEvent: !!event,
                     color: event ? event.warna : ''
                 });
             }
-
-            console.log('Mini Calendar Generated with events:', this.calendarDays.filter(d => d.hasEvent).length, 'events found');
         },
 
         navigateToDate(date) {
@@ -1118,7 +1166,6 @@ function miniCalendar() {
             const clickedMonth = date.getMonth() + 1;
             const clickedDay = date.getDate();
 
-            // Selalu reload dengan parameter tanggal yang diklik dan view daily
             localStorage.setItem('kalenderView', 'daily');
             const dateStr = `${clickedYear}-${String(clickedMonth).padStart(2, '0')}-${String(clickedDay).padStart(2, '0')}`;
             const url = `{{ route('kalender-buddhist.index') }}?tahun=${clickedYear}&bulan=${clickedMonth}&date=${dateStr}`;

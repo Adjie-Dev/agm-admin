@@ -4,10 +4,40 @@ namespace App\Http\Controllers;
 
 use App\Models\Dhammavachana;
 use Illuminate\Http\Request;
-use setasign\Fpdi\Fpdi;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Smalot\PdfParser\Parser;
+use Spatie\PdfToImage\Pdf;
 
 class DhammavachanaController extends Controller
 {
+    private function generatePdfThumbnail($pdfPath)
+{
+    try {
+        $fullPdfPath = storage_path('app/public/' . $pdfPath);
+        $thumbnailName = 'covers/' . pathinfo($pdfPath, PATHINFO_FILENAME) . '_thumb.jpg';
+        $fullThumbnailPath = storage_path('app/public/' . $thumbnailName);
+
+        if (!file_exists(dirname($fullThumbnailPath))) {
+            mkdir(dirname($fullThumbnailPath), 0755, true);
+        }
+
+        $pdf = new Pdf($fullPdfPath);
+        $pdf->setPage(1)
+            ->setResolution(150)
+            ->saveImage($fullThumbnailPath);
+
+        if (file_exists($fullThumbnailPath)) {
+            return $thumbnailName;
+        }
+
+        return null;
+    } catch (\Exception $e) {
+        \Log::error('Generate thumbnail error: ' . $e->getMessage());
+        return null;
+    }
+}
+
     public function index()
     {
         $dhammavachanas = Dhammavachana::with('uploader')
@@ -25,75 +55,72 @@ class DhammavachanaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
             'pdf_file' => 'required|file|mimes:pdf|max:10240',
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
         ]);
-
-        // Upload PDF
-        $pdfPath = $request->file('pdf_file')->store('dhammavachana', 'public');
-        $pdfFullPath = storage_path('app/public/' . $pdfPath);
-
-        // Get page count
-        $pageCount = 0;
-        $coverFilename = null;
 
         try {
-            $fpdi = new Fpdi();
-            $pageCount = $fpdi->setSourceFile($pdfFullPath);
+            $pdfFile = $request->file('pdf_file');
+            $pdfPath = $pdfFile->store('dhammavachana', 'public');
+            $fullPath = storage_path('app/public/' . $pdfPath);
 
-            // Generate cover menggunakan Ghostscript (jika tersedia)
-            $coverFilename = $this->generateCoverWithGhostscript($pdfPath, $pdfFullPath);
+            // Set default values
+            $title = $request->input('title');
+            $pageCount = 0;
+            $coverImage = null;
+
+            // Try to parse PDF for metadata
+            try {
+                $parser = new Parser();
+                $pdf = $parser->parseFile($fullPath);
+
+                // Get title from PDF if not provided
+                if (empty($title)) {
+                    $details = $pdf->getDetails();
+                    $title = $details['Title'] ?? '';
+                }
+
+                // Get page count
+                $pageCount = count($pdf->getPages());
+            } catch (\Exception $e) {
+                \Log::warning('PDF parsing failed: ' . $e->getMessage());
+            }
+
+            // Fallback to filename if title still empty
+            if (empty($title)) {
+                $title = pathinfo($pdfFile->getClientOriginalName(), PATHINFO_FILENAME);
+            }
+
+            // Generate thumbnail (independent of parsing)
+            $coverImage = $this->generatePdfThumbnail($pdfPath);
+
+            // Create record - SIMPLE, NO array_filter
+            $dhammavachana = new Dhammavachana();
+            $dhammavachana->title = $title;
+            $dhammavachana->description = $request->input('description');
+            $dhammavachana->pdf_path = $pdfPath;
+            $dhammavachana->cover_image = $coverImage;
+            $dhammavachana->page_count = $pageCount;
+            $dhammavachana->uploaded_by = Auth::id();
+            $dhammavachana->save();
+
+            return redirect()
+                ->route('dhammavachana.index')
+                ->with('success', 'Dhammavachana berhasil diupload!');
 
         } catch (\Exception $e) {
-            \Log::error('PDF processing error: ' . $e->getMessage());
-            // Lanjutkan tanpa cover
-        }
-
-        // Save to database
-        Dhammavachana::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'pdf_path' => $pdfPath,
-            'cover_image' => $coverFilename,
-            'page_count' => $pageCount,
-            'uploaded_by' => auth()->id(),
-            'author' => $request->author ?? 'Unknown',
-            'category' => $request->category ?? 'umum',
-            'language' => $request->language ?? 'Indonesia',
-            'pages' => $request->pages ?? 0,
-        ]);
-
-        return redirect()->route('dhammavachana.index')
-            ->with('success', 'Dhammavachana berhasil diupload');
-    }
-
-    private function generateCoverWithGhostscript($pdfPath, $pdfFullPath)
-    {
-        $coverFilename = 'covers/' . pathinfo($pdfPath, PATHINFO_FILENAME) . '.jpg';
-        $coverFullPath = storage_path('app/public/' . $coverFilename);
-
-        if (!file_exists(dirname($coverFullPath))) {
-            mkdir(dirname($coverFullPath), 0755, true);
-        }
-
-        // Cek apakah Ghostscript tersedia
-        $gsCommand = stripos(PHP_OS, 'WIN') === 0 ? 'gswin64c' : 'gs';
-
-        exec("$gsCommand -version 2>&1", $output, $returnCode);
-
-        if ($returnCode === 0) {
-            // Ghostscript tersedia, generate cover
-            $command = "$gsCommand -dNOPAUSE -sDEVICE=jpeg -dFirstPage=1 -dLastPage=1 -sOutputFile=\"$coverFullPath\" -r150 -dBATCH -q \"$pdfFullPath\"";
-            exec($command, $output, $returnCode);
-
-            if ($returnCode === 0 && file_exists($coverFullPath)) {
-                return $coverFilename;
+            if (isset($pdfPath) && Storage::disk('public')->exists($pdfPath)) {
+                Storage::disk('public')->delete($pdfPath);
             }
-        }
 
-        // Jika Ghostscript tidak tersedia, return null (gunakan default cover)
-        return null;
+            \Log::error('Store dhammavachana error: ' . $e->getMessage());
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal mengupload dhammavachana: ' . $e->getMessage());
+        }
     }
 
     public function show(Dhammavachana $dhammavachana)
@@ -109,62 +136,93 @@ class DhammavachanaController extends Controller
     public function update(Request $request, Dhammavachana $dhammavachana)
     {
         $request->validate([
+            'pdf_file' => 'nullable|file|mimes:pdf|max:10240',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'pdf_file' => 'nullable|file|mimes:pdf|max:10240',
         ]);
 
-        $data = [
-            'title' => $request->title,
-            'description' => $request->description,
-        ];
+        try {
+            $dhammavachana->title = $request->input('title');
+            $dhammavachana->description = $request->input('description');
 
-        // Jika ada file PDF baru
-        if ($request->hasFile('pdf_file')) {
-            // Hapus file lama
-            if ($dhammavachana->pdf_path) {
-                \Storage::disk('public')->delete($dhammavachana->pdf_path);
+            if ($request->hasFile('pdf_file')) {
+                $pdfFile = $request->file('pdf_file');
+                $pdfPath = $pdfFile->store('dhammavachana', 'public');
+                $fullPath = storage_path('app/public/' . $pdfPath);
+
+                // Set default values
+                $pageCount = 0;
+                $coverImage = null;
+
+                // Try to parse PDF for metadata
+                try {
+                    $parser = new Parser();
+                    $pdf = $parser->parseFile($fullPath);
+                    $pageCount = count($pdf->getPages());
+                } catch (\Exception $e) {
+                    \Log::warning('PDF parsing failed during update: ' . $e->getMessage());
+                }
+
+                // Generate thumbnail (independent of parsing)
+                $coverImage = $this->generatePdfThumbnail($pdfPath);
+
+                // Delete old files
+                if ($dhammavachana->pdf_path && Storage::disk('public')->exists($dhammavachana->pdf_path)) {
+                    Storage::disk('public')->delete($dhammavachana->pdf_path);
+                }
+
+                if ($dhammavachana->cover_image && Storage::disk('public')->exists($dhammavachana->cover_image)) {
+                    Storage::disk('public')->delete($dhammavachana->cover_image);
+                }
+
+                $dhammavachana->pdf_path = $pdfPath;
+                $dhammavachana->cover_image = $coverImage;
+                $dhammavachana->page_count = $pageCount;
             }
-            if ($dhammavachana->cover_image) {
-                \Storage::disk('public')->delete($dhammavachana->cover_image);
+
+            $dhammavachana->save();
+
+            return redirect()
+                ->route('dhammavachana.index')
+                ->with('success', 'Dhammavachana berhasil diupdate!');
+
+        } catch (\Exception $e) {
+            if (isset($pdfPath) && Storage::disk('public')->exists($pdfPath)) {
+                Storage::disk('public')->delete($pdfPath);
             }
 
-            // Upload file baru
-            $pdfPath = $request->file('pdf_file')->store('dhammavachana', 'public');
-            $pdfFullPath = storage_path('app/public/' . $pdfPath);
+            \Log::error('Update dhammavachana error: ' . $e->getMessage());
 
-            try {
-                $fpdi = new Fpdi();
-                $pageCount = $fpdi->setSourceFile($pdfFullPath);
-                $coverFilename = $this->generateCoverWithGhostscript($pdfPath, $pdfFullPath);
-
-                $data['pdf_path'] = $pdfPath;
-                $data['cover_image'] = $coverFilename;
-                $data['page_count'] = $pageCount;
-            } catch (\Exception $e) {
-                \Log::error('PDF processing error: ' . $e->getMessage());
-            }
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui dhammavachana: ' . $e->getMessage());
         }
-
-        $dhammavachana->update($data);
-
-        return redirect()->route('dhammavachana.index')
-            ->with('success', 'Dhammavachana berhasil diupdate');
     }
 
     public function destroy(Dhammavachana $dhammavachana)
     {
-        // Hapus file
-        if ($dhammavachana->pdf_path) {
-            \Storage::disk('public')->delete($dhammavachana->pdf_path);
-        }
-        if ($dhammavachana->cover_image) {
-            \Storage::disk('public')->delete($dhammavachana->cover_image);
-        }
+        try {
+            if ($dhammavachana->pdf_path && Storage::disk('public')->exists($dhammavachana->pdf_path)) {
+                Storage::disk('public')->delete($dhammavachana->pdf_path);
+            }
 
-        $dhammavachana->delete();
+            if ($dhammavachana->cover_image && Storage::disk('public')->exists($dhammavachana->cover_image)) {
+                Storage::disk('public')->delete($dhammavachana->cover_image);
+            }
 
-        return redirect()->route('dhammavachana.index')
-            ->with('success', 'Dhammavachana berhasil dihapus');
+            $dhammavachana->delete();
+
+            return redirect()
+                ->route('dhammavachana.index')
+                ->with('success', 'Dhammavachana berhasil dihapus!');
+
+        } catch (\Exception $e) {
+            \Log::error('Delete dhammavachana error: ' . $e->getMessage());
+
+            return redirect()
+                ->route('dhammavachana.index')
+                ->with('error', 'Gagal menghapus dhammavachana: ' . $e->getMessage());
+        }
     }
 }

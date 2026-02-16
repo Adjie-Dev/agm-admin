@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
     public function up(): void
     {
         Schema::create('dhammavachana', function (Blueprint $table) {
@@ -16,13 +15,7 @@ return new class extends Migration
             $table->string('pdf_path');
             $table->string('cover_image')->nullable();
             $table->integer('page_count')->default(0);
-            $table->foreignId('uploaded_by')->constrained('users');
-            $table->string('author')->nullable();
-            $table->string('category')->nullable();
-            $table->string('language')->nullable();
-            $table->integer('pages')->default(0);
-            $table->boolean('is_published')->default(false);
-            $table->integer('views')->default(0);
+            $table->foreignId('uploaded_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });
     }

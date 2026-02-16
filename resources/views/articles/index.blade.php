@@ -5,27 +5,27 @@
 @section('header', 'Artikel')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Success Message -->
     @if(session('success'))
-    <div class="mb-6 bg-green-500/10 border border-green-500/50 rounded-2xl p-4">
-        <p class="text-green-400 font-medium">{{ session('success') }}</p>
+    <div class="mb-4 sm:mb-6 bg-green-500/10 border border-green-500/50 rounded-2xl p-3 sm:p-4">
+        <p class="text-green-400 font-medium text-sm sm:text-base">{{ session('success') }}</p>
     </div>
     @endif
 
-    <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-white">Semua Artikel</h2>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3">
+        <h2 class="text-xl sm:text-2xl font-bold text-white">Semua Artikel</h2>
         <a href="{{ route('articles.create') }}"
-            class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            class="px-4 py-2.5 sm:px-6 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm sm:text-base">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
             <span>Tambah Artikel Baru</span>
         </a>
     </div>
 
-    <!-- artikel table -->
-    <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+    <!-- Desktop Table View -->
+    <div class="hidden md:block bg-slate-800/70 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
@@ -120,6 +120,92 @@
         <!-- Pagination -->
         @if($articles->hasPages())
         <div class="px-6 py-4 border-t border-slate-700/50">
+            {{ $articles->links() }}
+        </div>
+        @endif
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="md:hidden space-y-4">
+        @forelse($articles as $article)
+        <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+            <div class="p-4">
+                <!-- Thumbnail & Title -->
+                <div class="flex gap-3 mb-3">
+                    @if($article->thumbnail)
+                    <img src="{{ asset('storage/' . $article->thumbnail) }}"
+                        alt="{{ $article->title }}"
+                        class="w-20 h-20 object-cover rounded-lg border border-slate-600 flex-shrink-0"
+                        loading="lazy"
+                        decoding="async">
+                    @else
+                    <div class="w-20 h-20 bg-slate-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    @endif
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-sm font-semibold text-white mb-1 line-clamp-2">{{ $article->title }}</h3>
+                        <p class="text-xs text-gray-400 mb-2">{{ $article->author }}</p>
+                        @if($article->published_at)
+                        <span class="inline-block px-2 py-1 text-xs font-semibold rounded-lg bg-green-500/10 text-green-400">
+                            {{ $article->published_at->format('d M Y') }}
+                        </span>
+                        @else
+                        <span class="inline-block px-2 py-1 text-xs font-semibold rounded-lg bg-gray-500/10 text-gray-400">
+                            Draf
+                        </span>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-700/50">
+                    <a href="{{ route('articles.show', $article) }}"
+                        class="px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 text-xs font-medium">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <span>Lihat</span>
+                    </a>
+                    <a href="{{ route('articles.edit', $article) }}"
+                        class="px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 text-xs font-medium">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        <span>Edit</span>
+                    </a>
+                    <form action="{{ route('articles.destroy', $article) }}" method="POST" class="inline-block">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                onclick="return confirm('Apakah Anda yakin ingin menghapus artikel ini?')"
+                                class="w-full px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 text-xs font-medium">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            <span>Hapus</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        @empty
+        <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-xl p-8">
+            <div class="flex flex-col items-center justify-center space-y-3">
+                <svg class="w-16 h-16 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <p class="text-gray-400 font-medium text-center">Belum ada artikel</p>
+            </div>
+        </div>
+        @endforelse
+
+        <!-- Pagination -->
+        @if($articles->hasPages())
+        <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-xl p-4">
             {{ $articles->links() }}
         </div>
         @endif

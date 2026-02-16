@@ -37,6 +37,7 @@
 </head>
 <body class="overflow-hidden" style="background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('{{ asset('images/bg.webp') }}') center/cover no-repeat fixed;" x-data="{ sidebarOpen: false }">
     <div class="flex h-screen">
+        <!-- Backdrop Overlay -->
         <div x-show="sidebarOpen"
              @click="sidebarOpen = false"
              x-transition:enter="transition-opacity ease-linear duration-300"
@@ -45,12 +46,13 @@
              x-transition:leave="transition-opacity ease-linear duration-300"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+             class="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
              style="display: none;">
         </div>
 
+        <!-- Sidebar -->
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-               class="fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-900/50 backdrop-blur-md border-r border-gray-700/50 transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col shadow-2xl">
+               class="fixed lg:static top-[72px] lg:top-0 bottom-0 lg:inset-y-0 left-0 z-40 w-64 bg-gray-900/50 backdrop-blur-md border-r border-gray-700/50 transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col shadow-2xl">
 
             <div class="p-6 border-b border-gray-700/50">
                 <div class="flex items-center justify-between">
@@ -151,6 +153,39 @@
                             class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('puja-pagi.*') ? ' text-white' : 'text-gray-400 hover:text-white' }}">
                             <span class="font-medium">Puja Pagi</span>
                         </a>
+                        <a href="{{ route('puja-sore.index') }}"
+                            class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('puja-sore.*') ? ' text-white' : 'text-gray-400 hover:text-white' }}">
+                            <span class="font-medium">Puja Petang</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div x-data="{ formsOpen: localStorage.getItem('paliVacanaOpen') === 'true' }">
+                    <button @click.stop="formsOpen = !formsOpen; localStorage.setItem('paliVacanaOpen', formsOpen)" class="w-full group flex items-center justify-between space-x-3 px-3 py-3 rounded-xl transition-all {{ request()->routeIs('pathama-puja.*') || request()->routeIs('puja-pagi.*') ? ' text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                        <div class="flex items-center space-x-3">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                            <span class="font-medium">Sūtra Chanting</span>
+                        </div>
+                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': formsOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="formsOpen"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 transform translate-y-0"
+                         x-transition:leave-end="opacity-0 transform -translate-y-2"
+                         class="ml-6 mt-2 space-y-2"
+                         style="display: none;"
+                         @click.stop>
+                        <a href="{{ route('amituojing.index') }}"
+                            class="block px-3 py-2 text-sm rounded-lg transition {{ request()->routeIs('amituojing.*') ? ' text-white' : 'text-gray-400 hover:text-white' }}">
+                            <span class="font-medium">Fo Shuo A Mi Tuo Jing</span>
+                        </a>
                     </div>
                 </div>
 
@@ -176,8 +211,10 @@
             </nav>
         </aside>
 
+        <!-- Main Content Area -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <header class="bg-gray-900/70 backdrop-blur-md border-b border-gray-700/70 px-6 py-4 shadow-lg relative z-50">
+            <!-- Header/Navbar -->
+            <header class="bg-gray-900/70 backdrop-blur-md border-b border-gray-700/70 px-6 py-4 shadow-lg sticky top-0 z-50">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white transition">
@@ -247,6 +284,7 @@
                 </div>
             </header>
 
+            <!-- Main Content -->
             <main class="flex-1 overflow-y-auto p-6">
                 @yield('content')
             </main>

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AmituojingController;
+use App\Http\Controllers\PujaSoreController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -39,6 +41,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('ebooks', EbookController::class);
     Route::resource('pathama-puja', PathamaPujaController::class);
     Route::resource('puja-pagi', PujaPagiController::class);
+    Route::resource('puja-sore', PujaSoreController::class);
+    Route::resource('amituojing', AmituojingController::class);
+
 
     // Routes untuk Kalender Buddhist
     Route::prefix('kalender-buddhist')->name('kalender-buddhist.')->group(function () {

@@ -6,7 +6,6 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto">
-    <!-- Back Button -->
     <div class="mb-6">
         <a href="{{ route('dhammavachana.index') }}"
            class="inline-flex items-center space-x-2 text-gray-400 hover:text-white transition-colors duration-200">
@@ -17,61 +16,10 @@
         </a>
     </div>
 
-    <!-- Form Card -->
     <div class="bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 shadow-xl">
         <form action="{{ route('dhammavachana.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
-            <!-- Title -->
-            <div class="mb-6">
-                <label for="title" class="block text-sm font-semibold text-gray-300 mb-2">
-                    Judul <span class="text-red-400">*</span>
-                </label>
-                <input type="text"
-                       name="title"
-                       id="title"
-                       value="{{ old('title') }}"
-                       class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
-                       placeholder="Masukkan judul dhammavācanā"
-                       required>
-                @error('title')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Description -->
-            <div class="mb-6">
-                <label for="description" class="block text-sm font-semibold text-gray-300 mb-2">
-                    Deskripsi <span class="text-red-400">*</span>
-                </label>
-                <textarea name="description"
-                          id="description"
-                          rows="6"
-                          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
-                          placeholder="Masukkan deskripsi dhammavācanā"
-                          required>{{ old('description') }}</textarea>
-                @error('description')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Author -->
-            <div class="mb-6">
-                <label for="author" class="block text-sm font-semibold text-gray-300 mb-2">
-                    Penulis
-                </label>
-                <input type="text"
-                       name="author"
-                       id="author"
-                       value="{{ old('author') }}"
-                       class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
-                       placeholder="Masukkan nama penulis">
-                @error('author')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- PDF File -->
             <div class="mb-8">
                 <label for="pdf_file" class="block text-sm font-semibold text-gray-300 mb-2">
                     File PDF <span class="text-red-400">*</span>
@@ -91,8 +39,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                             </svg>
                             <p class="text-sm text-gray-400 mb-1">Klik untuk upload file PDF</p>
-                            <p class="text-xs text-gray-500">Cover akan otomatis diambil dari halaman pertama PDF</p>
-                            <p class="text-xs text-gray-500 mt-1">Maksimal 20MB</p>
+                            <p class="text-xs text-gray-500">Cover dan judul akan otomatis diambil dari PDF</p>
+                            <p class="text-xs text-gray-500 mt-1">Maksimal 10MB</p>
                         </div>
                         <div class="hidden" id="file-preview">
                             <div class="flex items-center space-x-3">
@@ -112,7 +60,35 @@
                 @enderror
             </div>
 
-            <!-- Action Buttons -->
+            <div class="mb-6">
+                <label for="title" class="block text-sm font-semibold text-gray-300 mb-2">
+                    Judul (Opsional)
+                </label>
+                <input type="text"
+                       name="title"
+                       id="title"
+                       value="{{ old('title') }}"
+                       class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
+                       placeholder="Kosongkan untuk menggunakan judul dari PDF">
+                @error('title')
+                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="mb-6">
+                <label for="description" class="block text-sm font-semibold text-gray-300 mb-2">
+                    Deskripsi (Opsional)
+                </label>
+                <textarea name="description"
+                          id="description"
+                          rows="6"
+                          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
+                          placeholder="Masukkan deskripsi dhammavācanā">{{ old('description') }}</textarea>
+                @error('description')
+                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
             <div class="flex items-center justify-end space-x-4">
                 <a href="{{ route('dhammavachana.index') }}"
                    class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-all duration-300">
@@ -123,7 +99,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span>Buat Dhammavācanā</span>
+                    <span>Simpan Dhammavācanā</span>
                 </button>
             </div>
         </form>

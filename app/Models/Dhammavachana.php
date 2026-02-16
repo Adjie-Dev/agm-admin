@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Dhammavachana extends Model
 {
-    protected $table = 'dhammavachana'; // TAMBAH INI
+    protected $table = 'dhammavachana';
 
     protected $fillable = [
         'title',
@@ -15,10 +15,6 @@ class Dhammavachana extends Model
         'cover_image',
         'page_count',
         'uploaded_by',
-        'author',
-        'category',
-        'language',
-        'pages',
     ];
 
     public function uploader()

@@ -77,7 +77,7 @@ class EbookController extends Controller
     {
         // Validasi input
         $request->validate([
-            'pdf_file' => 'required|file|mimes:pdf|max:51200', // Max 50MB
+            'pdf_file' => 'required|file|mimes:pdf|max:51200',
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
         ]);
@@ -162,7 +162,7 @@ class EbookController extends Controller
     {
         // Validasi input
         $request->validate([
-            'pdf_file' => 'nullable|file|mimes:pdf|max:51200', // Max 50MB
+            'pdf_file' => 'nullable|file|mimes:pdf|max:51200',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
